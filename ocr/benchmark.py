@@ -28,7 +28,7 @@ LAT2CYR = {
     "O": "О", "P": "Р", "C": "С", "T": "Т", "Y": "У", "X": "Х",
 }
 CYR = set("АВЕКМНОРСТУХ")
-D2L = {"0": "О", "8": "В", "1": "Т"}
+D2L = {"0": "О", "8": "В", "1": "Т", "2": "Е", "3": "Е"}
 L2D = {"О": "0", "В": "8", "Т": "1"}
 PLATE_RE = re.compile(r"^[АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2}\d{2,3}$")
 
@@ -72,6 +72,37 @@ def ru_normalize(raw: str) -> str | None:
     return None
 
 
+def ru_normalize_candidates(raws: list[str]) -> str | None:
+    candidates: list[str] = []
+    for raw in raws:
+        if not raw:
+            continue
+        c = canon(raw)
+        candidates.append(c)
+        cc = context_correct(c)
+        if cc:
+            candidates.append(cc)
+
+    fused: set[str] = set()
+    for left in candidates:
+        two = re.match(r"^([АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2})(\d{2})$", left)
+        if not two:
+            continue
+        for right in candidates:
+            missing = re.match(r"^([АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ])(\d{3})$", right)
+            if not missing:
+                continue
+            if two.group(1)[:5] != missing.group(1):
+                continue
+            if missing.group(2).endswith(two.group(2)):
+                fused.add(f"{two.group(1)}{missing.group(2)}")
+
+    for cand in sorted([*fused, *candidates], key=len, reverse=True):
+        if PLATE_RE.match(cand):
+            return cand
+    return None
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print("usage: python benchmark.py <images_dir> [expected.csv]")
@@ -103,7 +134,8 @@ def main() -> None:
         times.append(ms)
         total += 1
 
-        norm = ru_normalize(res.plate) if res.plate else None
+        raws = [res.plate or "", *getattr(res, "candidates", [])]
+        norm = ru_normalize_candidates(raws)
         exp = expected.get(name)
 
         if norm is None:

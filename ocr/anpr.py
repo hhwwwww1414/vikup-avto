@@ -46,6 +46,7 @@ class AnprResult:
     confidence: float
     found: bool
     ms: int
+    candidates: list[str]
 
 
 def _decode_image(data: bytes) -> np.ndarray | None:
@@ -108,18 +109,20 @@ def recognize(data: bytes) -> AnprResult:
 
     img = _decode_image(data)
     if img is None:
-        return AnprResult(None, 0.0, False, int((time.time() - start) * 1000))
+        return AnprResult(None, 0.0, False, int((time.time() - start) * 1000), [])
 
     with _lock:
         detections = _detector.predict(img)
 
     if not detections:
-        return AnprResult(None, 0.0, False, int((time.time() - start) * 1000))
+        return AnprResult(None, 0.0, False, int((time.time() - start) * 1000), [])
 
     detections = sorted(detections, key=lambda d: d.confidence, reverse=True)[:MAX_PLATES]
 
     best_plate: str | None = None
     best_conf = 0.0
+    seen_candidates: set[str] = set()
+    candidates: list[tuple[float, str]] = []
 
     for det in detections:
         bb = det.bounding_box
@@ -139,11 +142,17 @@ def recognize(data: bytes) -> AnprResult:
             conf = _score(getattr(pred, "char_probs", []))
             # Weight OCR confidence by detector confidence to prefer clear plates.
             weighted = conf * (0.6 + 0.4 * float(det.confidence))
+            if text and text not in seen_candidates:
+                seen_candidates.add(text)
+                candidates.append((weighted, text))
             if text and weighted > best_conf:
                 best_conf = weighted
                 best_plate = text
 
     ms = int((time.time() - start) * 1000)
+    ordered_candidates = [
+        text for _, text in sorted(candidates, key=lambda item: item[0], reverse=True)
+    ]
     if best_plate is None:
-        return AnprResult(None, 0.0, True, ms)  # found a region but no OCR
-    return AnprResult(best_plate, round(best_conf, 4), True, ms)
+        return AnprResult(None, 0.0, True, ms, ordered_candidates)  # found a region but no OCR
+    return AnprResult(best_plate, round(best_conf, 4), True, ms, ordered_candidates)

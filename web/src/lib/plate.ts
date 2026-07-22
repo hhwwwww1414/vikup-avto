@@ -37,6 +37,8 @@ const DIGIT_TO_LETTER: Record<string, string> = {
   "0": "О",
   "8": "В",
   "1": "Т",
+  "2": "Е",
+  "3": "Е",
 };
 // Keys are canonical Cyrillic (input is canonicalized before this map is used).
 const LETTER_TO_DIGIT: Record<string, string> = {
@@ -136,6 +138,57 @@ export function parseRussianPlate(raw: string): PlateResult | null {
     if (PLATE_REGEX.test(cand)) {
       return { normalized: cand, display: formatPlateDisplay(cand) };
     }
+  }
+  return null;
+}
+
+function validPlateResult(candidate: string): PlateResult | null {
+  if (!PLATE_REGEX.test(candidate)) return null;
+  return { normalized: candidate, display: formatPlateDisplay(candidate) };
+}
+
+function plateCandidates(raw: string): string[] {
+  const canonical = normalizePlateInput(raw);
+  const candidates = new Set<string>();
+  if (canonical) candidates.add(canonical);
+  const corrected = contextCorrect(canonical);
+  if (corrected) candidates.add(corrected);
+  return [...candidates];
+}
+
+/**
+ * Pick the best normalized plate from several OCR variants. This handles cases
+ * where one crop reads the letters and 2-digit region, while another crop reads
+ * the same prefix with a 3-digit region.
+ */
+export function parseRussianPlateCandidates(raws: readonly string[]): PlateResult | null {
+  const candidates = raws.flatMap(plateCandidates);
+  const fused = new Set<string>();
+
+  for (const left of candidates) {
+    const twoDigit = left.match(/^([АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2})(\d{2})$/);
+    if (!twoDigit) continue;
+
+    for (const right of candidates) {
+      const missingLetter = right.match(/^([АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ])(\d{3})$/);
+      if (!missingLetter) continue;
+      if (twoDigit[1].slice(0, 5) !== missingLetter[1]) continue;
+      if (!missingLetter[2].endsWith(twoDigit[2])) continue;
+      fused.add(`${twoDigit[1]}${missingLetter[2]}`);
+    }
+  }
+
+  const ordered = [...fused, ...candidates].sort((a, b) => {
+    const aValid = PLATE_REGEX.test(a);
+    const bValid = PLATE_REGEX.test(b);
+    if (aValid !== bValid) return aValid ? -1 : 1;
+    if (a.length !== b.length) return b.length - a.length;
+    return 0;
+  });
+
+  for (const cand of ordered) {
+    const result = validPlateResult(cand);
+    if (result) return result;
   }
   return null;
 }

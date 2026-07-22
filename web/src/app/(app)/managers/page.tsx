@@ -28,8 +28,13 @@ export default async function ManagersPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="mb-5 text-2xl font-bold tracking-tight">Менеджеры</h1>
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-6">
+        <div className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
+          Администрирование
+        </div>
+        <h1 className="mt-1 text-3xl font-black tracking-tight">Менеджеры</h1>
+      </div>
       <ManagersClient rows={rows} />
     </div>
   );

@@ -51,24 +51,51 @@ export default async function GaragePage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Гараж</h1>
-        <div className="text-sm text-[var(--muted)]">Всего: {total}</div>
+    <div className="mx-auto max-w-7xl">
+      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
+        <div>
+          <div className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
+            Рабочая база
+          </div>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-[var(--text)]">Гараж</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+            Автомобили, добавленные менеджерами через Telegram-бота.
+          </p>
+        </div>
+        <div className="rounded-lg border border-[var(--border)] bg-white p-2 shadow-card">
+          <SearchBar initial={rawQuery} />
+        </div>
       </div>
 
-      <div className="mb-6">
-        <SearchBar initial={rawQuery} />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--border)] py-3">
+        <div className="text-sm font-semibold text-[var(--text)]">
+          Найдено: <span className="tabular-nums">{total}</span>
+        </div>
+        {rawQuery && (
+          <Link
+            href="/garage"
+            className="rounded-md border border-[var(--border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition hover:text-[var(--text)]"
+          >
+            Сбросить поиск
+          </Link>
+        )}
       </div>
 
       {vehicles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--panel)] p-10 text-center text-[var(--muted)]">
-          {rawQuery
-            ? `По запросу «${rawQuery}» ничего не найдено.`
-            : "Пока нет автомобилей. Отправьте фото госномера в Telegram-бота."}
+        <div className="grid min-h-[320px] place-items-center rounded-lg border border-dashed border-slate-300 bg-white/70 p-8 text-center">
+          <div>
+            <div className="text-lg font-semibold text-[var(--text)]">
+              {rawQuery ? "Ничего не найдено" : "Гараж пока пуст"}
+            </div>
+            <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">
+              {rawQuery
+                ? `По запросу «${rawQuery}» нет сохраненных автомобилей.`
+                : "Отправьте фото автомобиля с видимым госномером в Telegram-бота."}
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {vehicles.map((v) => (
             <VehicleCard key={v.id} v={v} />
           ))}
@@ -76,19 +103,19 @@ export default async function GaragePage({
       )}
 
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-2 text-sm">
+        <div className="mt-8 flex items-center justify-center gap-2 text-sm">
           {page > 1 && (
             <Link
               href={`/garage?${new URLSearchParams({
                 ...(rawQuery ? { q: rawQuery } : {}),
                 page: String(page - 1),
               })}`}
-              className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 hover:bg-black/5"
+              className="rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold transition hover:bg-slate-50"
             >
               Назад
             </Link>
           )}
-          <span className="text-[var(--muted)]">
+          <span className="rounded-md bg-white px-3 py-2 font-semibold text-[var(--muted)] shadow-card">
             {page} / {totalPages}
           </span>
           {page < totalPages && (
@@ -97,9 +124,9 @@ export default async function GaragePage({
                 ...(rawQuery ? { q: rawQuery } : {}),
                 page: String(page + 1),
               })}`}
-              className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 hover:bg-black/5"
+              className="rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold transition hover:bg-slate-50"
             >
-              Вперёд
+              Вперед
             </Link>
           )}
         </div>

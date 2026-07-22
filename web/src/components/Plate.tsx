@@ -1,16 +1,27 @@
 /**
- * Renders a normalized RU plate (e.g. "О101НТ790") as "О101НТ 790" with a
- * region separator. Purely presentational.
+ * Renders a normalized RU plate (e.g. "О101НТ790") as a compact Russian
+ * registration plate with a separated region block.
  */
 export function Plate({ value, className = "" }: { value: string; className?: string }) {
-  const m = value.match(/^([АВЕКМНОРСТУХ]\d{3}[АВЕКМНОРСТУХ]{2})(\d{2,3})$/);
+  const m = value.match(/^([АВЕКМНОРСТУХ])(\d{3})([АВЕКМНОРСТУХ]{2})(\d{2,3})$/);
   if (!m) {
-    return <span className={`plate ${className}`}>{value}</span>;
+    return <span className={`plate-fallback ${className}`}>{value}</span>;
   }
+
   return (
-    <span className={`plate ${className}`}>
-      <span>{m[1]}</span>
-      <span className="region">{m[2]}</span>
+    <span className={`ru-plate ${className}`} aria-label={`${m[1]}${m[2]}${m[3]} ${m[4]}`}>
+      <span className="ru-plate-main">
+        <span>{m[1]}</span>
+        <span>{m[2]}</span>
+        <span>{m[3]}</span>
+      </span>
+      <span className="ru-plate-region">
+        <span className="ru-plate-region-code">{m[4]}</span>
+        <span className="ru-plate-country">
+          <span>RUS</span>
+          <img alt="" src="/plate-rus.svg" width="50" height="15" loading="lazy" />
+        </span>
+      </span>
     </span>
   );
 }

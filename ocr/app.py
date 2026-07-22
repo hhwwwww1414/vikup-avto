@@ -51,6 +51,7 @@ async def recognize_endpoint(file: UploadFile = File(...)) -> JSONResponse:
     return JSONResponse(
         {
             "plate": result.plate,
+            "candidates": result.candidates,
             "confidence": result.confidence,
             "found": result.found,
             "ms": result.ms,

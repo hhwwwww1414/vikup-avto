@@ -8,13 +8,15 @@ export default async function LoginPage() {
   if (session) redirect("/garage");
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <div className="text-2xl font-bold tracking-tight text-graphite">VIKUP</div>
-          <p className="mt-1 text-sm text-[var(--muted)]">Вход в систему</p>
+    <main className="grid min-h-screen place-items-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <div className="mb-6">
+          <div className="text-4xl font-black tracking-tight text-[var(--text)]">VIKUP</div>
+          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+            Внутренний доступ к гаражу и аналитике выкупных автомобилей.
+          </p>
         </div>
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-6 shadow-card">
+        <div className="rounded-lg border border-[var(--border)] bg-white p-6 shadow-card">
           <Suspense fallback={null}>
             <LoginForm />
           </Suspense>

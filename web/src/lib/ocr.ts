@@ -1,10 +1,11 @@
 import "server-only";
 import { env } from "./env";
 import { log } from "./logger";
-import { parseRussianPlate, type PlateResult } from "./plate";
+import { parseRussianPlateCandidates, type PlateResult } from "./plate";
 
 export interface OcrResponse {
   plate: string | null; // raw best OCR string (latin/mixed)
+  candidates?: string[]; // additional raw OCR variants, best first
   confidence: number;
   found: boolean; // was a plate region detected
   ms: number;
@@ -45,7 +46,10 @@ export async function recognizePlate(
       return { ocr, plate: null };
     }
 
-    const plate = parseRussianPlate(ocr.plate);
+    const rawCandidates = [ocr.plate, ...(ocr.candidates ?? [])].filter(
+      (p): p is string => Boolean(p),
+    );
+    const plate = parseRussianPlateCandidates(rawCandidates);
     return { ocr, plate };
   } catch (e) {
     log.warn("ocr.error", { err: String(e) });

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   normalizePlateInput,
+  parseRussianPlateCandidates,
   parseRussianPlate,
   formatPlateDisplay,
   isValidRussianPlate,
@@ -32,6 +33,14 @@ test("parseRussianPlate accepts standard plates (2 and 3 digit region)", () => {
 test("parseRussianPlate corrects OCR digit/letter confusion by position", () => {
   // OCR returned latin O and H and digit-shaped letters
   assert.equal(parseRussianPlate("0101HT790")?.normalized, "О101НТ790");
+  assert.equal(parseRussianPlate("2318CK199")?.normalized, "Е318СК199");
+});
+
+test("parseRussianPlateCandidates combines OCR fragments for missing region or letter", () => {
+  assert.deepEqual(
+    parseRussianPlateCandidates(["C160TH99", "C160T799"])?.normalized,
+    "С160ТН799",
+  );
 });
 
 test("parseRussianPlate rejects impossible plates", () => {

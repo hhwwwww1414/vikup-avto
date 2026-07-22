@@ -36,7 +36,7 @@ export function AppShell({
   }
 
   const NavLinks = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-1.5">
       {items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(item.href + "/");
         return (
@@ -44,13 +44,18 @@ export function AppShell({
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+            className={`group flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-semibold transition ${
               active
-                ? "bg-graphite text-white"
-                : "text-graphite hover:bg-black/5"
+                ? "bg-white text-[var(--sidebar)] shadow-sm"
+                : "text-white/70 hover:bg-white/[0.08] hover:text-white"
             }`}
           >
-            {item.label}
+            <span>{item.label}</span>
+            <span
+              className={`h-1.5 w-1.5 rounded-full transition ${
+                active ? "bg-accent" : "bg-white/0 group-hover:bg-white/35"
+              }`}
+            />
           </Link>
         );
       })}
@@ -58,14 +63,17 @@ export function AppShell({
   );
 
   const Profile = () => (
-    <div className="border-t border-[var(--border)] pt-3">
-      <div className="px-3 text-sm font-medium">{user.name}</div>
-      <div className="px-3 text-xs text-[var(--muted)]">
-        {user.role === "ADMIN" ? "Администратор" : "Менеджер"}
+    <div className="border-t border-white/10 pt-4">
+      <div className="rounded-md bg-white/[0.07] px-3 py-3">
+        <div className="truncate text-sm font-semibold text-white">{user.name}</div>
+        <div className="mt-0.5 truncate text-xs text-white/52">{user.login}</div>
+        <div className="mt-2 inline-flex rounded-sm bg-white/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white/70">
+          {user.role === "ADMIN" ? "Админ" : "Менеджер"}
+        </div>
       </div>
       <button
         onClick={logout}
-        className="mt-2 w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+        className="mt-3 w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-red-200 transition hover:bg-red-500/12 hover:text-red-100 focus:outline-none focus:ring-2 focus:ring-white/30"
       >
         Выйти
       </button>
@@ -74,42 +82,48 @@ export function AppShell({
 
   return (
     <div className="min-h-screen md:flex">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-[var(--border)] md:bg-[var(--panel)] md:p-4">
-        <div className="mb-6 px-3 text-xl font-bold tracking-tight">VIKUP</div>
+      <aside className="hidden md:flex md:w-64 md:min-w-64 md:flex-col md:bg-[var(--sidebar)] md:p-4">
+        <div className="mb-7 px-3 pt-2">
+          <div className="text-2xl font-black tracking-tight text-white">VIKUP</div>
+          <div className="mt-1 text-xs font-medium text-white/45">Учет выкупных авто</div>
+        </div>
         <NavLinks />
         <div className="mt-auto">
           <Profile />
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-[var(--panel)] px-4 py-3 md:hidden">
-        <div className="text-lg font-bold tracking-tight">VIKUP</div>
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--border)] bg-white/92 px-4 py-3 backdrop-blur md:hidden">
+        <div>
+          <div className="text-lg font-black tracking-tight">VIKUP</div>
+          <div className="text-[11px] font-medium text-[var(--muted)]">Гараж</div>
+        </div>
         <button
           aria-label="Меню"
           onClick={() => setOpen(true)}
-          className="rounded-lg p-2 hover:bg-black/5"
+          className="rounded-md border border-[var(--border)] bg-white p-2 transition hover:bg-[var(--panel-strong)] focus:outline-none focus:ring-2 focus:ring-accent/25"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </header>
 
-      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-30 md:hidden">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-0 flex h-full w-64 flex-col bg-[var(--panel)] p-4 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="px-1 text-xl font-bold tracking-tight">VIKUP</div>
+          <div className="absolute inset-0 bg-black/45" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 flex h-full w-72 flex-col bg-[var(--sidebar)] p-4 shadow-2xl">
+            <div className="mb-7 flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-black tracking-tight text-white">VIKUP</div>
+                <div className="mt-1 text-xs font-medium text-white/45">Учет выкупных авто</div>
+              </div>
               <button
                 aria-label="Закрыть"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 hover:bg-black/5"
+                className="rounded-md p-2 text-white/72 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </button>
@@ -122,7 +136,7 @@ export function AppShell({
         </div>
       )}
 
-      <main className="flex-1 px-4 py-5 md:px-8 md:py-7">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 md:px-8 md:py-8">{children}</main>
     </div>
   );
 }

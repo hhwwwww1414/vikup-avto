@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const inputCls =
+  "w-full rounded-md border border-[var(--border)] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -31,7 +34,7 @@ export function LoginForm() {
         setError(data.error || "Ошибка входа");
       }
     } catch {
-      setError("Сеть недоступна. Попробуйте ещё раз.");
+      setError("Сеть недоступна. Попробуйте еще раз.");
     } finally {
       setLoading(false);
     }
@@ -40,34 +43,40 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="mb-1 block text-sm font-medium">Логин или email</label>
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
+          Логин или email
+        </label>
         <input
           type="text"
           autoComplete="username"
           value={login}
           onChange={(e) => setLogin(e.target.value)}
           required
-          className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className={inputCls}
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Пароль</label>
+        <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
+          Пароль
+        </label>
         <input
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className={inputCls}
         />
       </div>
       {error && (
-        <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+          {error}
+        </div>
       )}
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition hover:bg-accent-hover disabled:opacity-60"
+        className="w-full rounded-md bg-[var(--sidebar)] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--sidebar-soft)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Вход..." : "Войти"}
       </button>
