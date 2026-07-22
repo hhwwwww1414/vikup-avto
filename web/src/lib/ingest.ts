@@ -4,14 +4,12 @@ import { log } from "./logger";
 import { recognizePlate } from "./ocr";
 import { storeVehiclePhoto } from "./s3";
 import {
-  answerCallbackQuery,
   deleteMessage,
   downloadFile,
   editMessageText,
   largestPhoto,
   sendChatAction,
   sendMessage,
-  type TgCallbackQuery,
   type TgMessage,
 } from "./telegram";
 
@@ -24,9 +22,6 @@ const MSG_INTERNAL_ERROR =
 const MSG_SEND_PHOTO =
   "Пришлите фото автомобиля, где номер хорошо виден.";
 
-const PHOTO_TIPS =
-  "Снимайте номер ближе, без вспышки в отражение, держите камеру ровно. Если номер мелкий в кадре, лучше отправить отдельное фото номера.";
-
 function htmlEscape(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -34,21 +29,8 @@ function htmlEscape(value: string): string {
     .replaceAll(">", "&gt;");
 }
 
-function garageUrl(plate?: string): string {
-  const url = new URL("/garage", process.env.APP_URL || "http://localhost:3000");
-  if (plate) url.searchParams.set("q", plate);
-  return url.toString();
-}
-
-function resultKeyboard(plate?: string) {
-  return {
-    inline_keyboard: [
-      [
-        { text: "Открыть в гараже", url: garageUrl(plate) },
-        { text: "Как снять лучше", callback_data: "photo_tips" },
-      ],
-    ],
-  };
+function formatPlateForTelegram(plateDisplay: string): string {
+  return plateDisplay.replace(/\s+(\d{2,3})$/, "|$1");
 }
 
 function startChatActionLoop(chatId: number): () => void {
@@ -95,27 +77,17 @@ async function sendResultCard(
   details: string,
 ): Promise<void> {
   const safeTitle = htmlEscape(title);
-  const safePlate = htmlEscape(plateDisplay);
+  const safePlate = htmlEscape(formatPlateForTelegram(plateDisplay));
   const safeDetails = htmlEscape(details);
 
   await sendMessage(
     chatId,
-    `<b>${safeTitle}</b>\n\n<code>${safePlate}</code>\n${safeDetails}`,
+    `<b>${safeTitle}</b>\n\n<pre>${safePlate}</pre>${safeDetails}`,
     {
       parseMode: "HTML",
       disableWebPagePreview: true,
-      replyMarkup: resultKeyboard(plateDisplay),
     },
   );
-}
-
-export async function handleTelegramCallback(query: TgCallbackQuery): Promise<void> {
-  if (query.data === "photo_tips") {
-    await answerCallbackQuery(query.id, PHOTO_TIPS, true);
-    return;
-  }
-
-  await answerCallbackQuery(query.id, "Команда недоступна.");
 }
 
 /**
@@ -190,11 +162,7 @@ export async function handleTelegramMessage(msg: TgMessage): Promise<void> {
         ms: ocr.ms,
       });
       await finishStatus();
-      await sendMessage(chatId, MSG_NOT_RECOGNIZED, {
-        replyMarkup: {
-          inline_keyboard: [[{ text: "Как снять лучше", callback_data: "photo_tips" }]],
-        },
-      });
+      await sendMessage(chatId, MSG_NOT_RECOGNIZED);
       return;
     }
     log.info("anpr.success", {
@@ -216,7 +184,7 @@ export async function handleTelegramMessage(msg: TgMessage): Promise<void> {
         chatId,
         "Уже в гараже",
         plate.display,
-        "\nЗапись не дублирую. Можно открыть карточку через кнопку ниже.",
+        "\nЗапись не дублирую.",
       );
       return;
     }

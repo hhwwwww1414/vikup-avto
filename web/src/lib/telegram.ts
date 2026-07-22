@@ -23,32 +23,13 @@ export interface TgMessage {
   document?: { file_id: string; mime_type?: string; file_size?: number };
 }
 
-export interface TgCallbackQuery {
-  id: string;
-  from: { id: number };
-  message?: TgMessage;
-  data?: string;
-}
-
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
-  callback_query?: TgCallbackQuery;
-}
-
-export interface TgInlineKeyboardButton {
-  text: string;
-  url?: string;
-  callback_data?: string;
-}
-
-export interface TgInlineKeyboardMarkup {
-  inline_keyboard: TgInlineKeyboardButton[][];
 }
 
 export interface SendMessageOptions {
   parseMode?: "HTML";
-  replyMarkup?: TgInlineKeyboardMarkup;
   disableWebPagePreview?: boolean;
 }
 
@@ -61,7 +42,6 @@ function messageBody(chatId: number, text: string, options: SendMessageOptions =
     chat_id: chatId,
     text,
     parse_mode: options.parseMode,
-    reply_markup: options.replyMarkup,
     disable_web_page_preview: options.disableWebPagePreview,
   };
 }
@@ -151,29 +131,6 @@ export async function sendChatAction(
   }
 }
 
-export async function answerCallbackQuery(
-  callbackQueryId: string,
-  text: string,
-  showAlert = false,
-): Promise<void> {
-  try {
-    const res = await fetch(`${API()}/answerCallbackQuery`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        callback_query_id: callbackQueryId,
-        text,
-        show_alert: showAlert,
-      }),
-    });
-    if (!res.ok) {
-      log.warn("telegram.answerCallbackQuery.failed", { status: res.status });
-    }
-  } catch (e) {
-    log.warn("telegram.answerCallbackQuery.error", { err: String(e) });
-  }
-}
-
 /** Returns the direct file path for a given file_id via getFile. */
 async function getFilePath(fileId: string): Promise<string | null> {
   const res = await fetch(`${API()}/getFile`, {
@@ -216,7 +173,7 @@ export async function setWebhook(url: string, secret: string): Promise<unknown> 
     body: JSON.stringify({
       url,
       secret_token: secret || undefined,
-      allowed_updates: ["message", "callback_query"],
+      allowed_updates: ["message"],
       drop_pending_updates: true,
     }),
   });
