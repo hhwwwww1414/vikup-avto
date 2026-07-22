@@ -1,0 +1,15 @@
+{
+	email 001donn@gmail.com
+}
+
+vikup.ghostpepe.fun {
+	encode zstd gzip
+
+	# Telegram photos are downloaded server-side; browser uploads are not used,
+	# so a modest request body limit is fine.
+	request_body {
+		max_size 25MB
+	}
+
+	reverse_proxy web:3000
+}

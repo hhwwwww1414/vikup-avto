@@ -1,0 +1,53 @@
+services:
+  ocr:
+    build: ./ocr
+    restart: unless-stopped
+    environment:
+      OCR_MODEL: ${OCR_MODEL:-cct-s-v2-global-model}
+      PLATE_DETECTOR_MODEL: ${PLATE_DETECTOR_MODEL:-yolo-v9-t-384-license-plate-end2end}
+    # No published ports: the OCR service is reachable only inside the compose
+    # network (web -> ocr). Never exposed to the internet.
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Europe/Moscow}
+      OCR_URL: http://ocr:8000
+    depends_on:
+      - ocr
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,31 @@
+# Secrets — never commit real env files
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Node
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+
+# Python / OCR
+__pycache__/
+*.pyc
+.venv/
+venv/
+ocr/models_cache/
+ocr/test_images/
+
+# Build / OS
+dist/
+build/
+.DS_Store
+Thumbs.db
+*.log
+
+# Prisma
+web/prisma/*.db
