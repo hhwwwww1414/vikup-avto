@@ -6,8 +6,8 @@ const config: Config = {
     extend: {
       colors: {
         graphite: {
-          DEFAULT: "#1f2430",
-          soft: "#2b313d",
+          DEFAULT: "#111827",
+          soft: "#374151",
         },
         accent: {
           DEFAULT: "#2563eb",
@@ -18,7 +18,7 @@ const config: Config = {
         plate: ["var(--font-plate)", "Georgia", "serif"],
       },
       boxShadow: {
-        card: "0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10)",
+        card: "0 12px 32px rgba(15, 23, 42, 0.08)",
       },
     },
   },

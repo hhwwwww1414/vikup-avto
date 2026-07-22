@@ -28,12 +28,9 @@ export default async function ManagersPage() {
   }));
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <div className="mb-6">
-        <div className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
-          Администрирование
-        </div>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Менеджеры</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--text)] sm:text-4xl">Менеджеры</h1>
       </div>
       <ManagersClient rows={rows} />
     </div>

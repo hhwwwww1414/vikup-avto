@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const inputCls =
-  "w-full rounded-md border border-[var(--border)] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
+const inputCls = "dashboard-input w-full px-3.5 py-2.5 text-sm font-medium";
 
 export function LoginForm() {
   const router = useRouter();
@@ -43,9 +42,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
-          Логин или email
-        </label>
+        <label className="mb-1.5 block text-xs font-bold text-[var(--muted-strong)]">Логин</label>
         <input
           type="text"
           autoComplete="username"
@@ -56,9 +53,7 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
-          Пароль
-        </label>
+        <label className="mb-1.5 block text-xs font-bold text-[var(--muted-strong)]">Пароль</label>
         <input
           type="password"
           autoComplete="current-password"
@@ -69,15 +64,11 @@ export function LoginForm() {
         />
       </div>
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {error}
         </div>
       )}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-md bg-[var(--sidebar)] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--sidebar-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <button type="submit" disabled={loading} className="dashboard-button w-full px-4 py-2.5 text-sm disabled:opacity-60">
         {loading ? "Вход..." : "Войти"}
       </button>
     </form>

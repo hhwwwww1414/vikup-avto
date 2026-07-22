@@ -9,17 +9,18 @@ export function Plate({ value, className = "" }: { value: string; className?: st
   }
 
   return (
-    <span className={`ru-plate ${className}`} aria-label={`${m[1]}${m[2]}${m[3]} ${m[4]}`}>
-      <span className="ru-plate-main">
-        <span>{m[1]}</span>
-        <span>{m[2]}</span>
-        <span>{m[3]}</span>
-      </span>
-      <span className="ru-plate-region">
-        <span className="ru-plate-region-code">{m[4]}</span>
-        <span className="ru-plate-country">
-          <span>RUS</span>
-          <img alt="" src="/plate-rus.svg" width="50" height="15" loading="lazy" />
+    <span className={`ru-plate-shell ${className}`} aria-label={`${m[1]}${m[2]}${m[3]} ${m[4]}`}>
+      <span className="ru-plate-grid">
+        <span className="ru-plate-main">
+          <span className="ru-plate-segment">{m[1]}</span>
+          <span className="ru-plate-segment">{m[2]}</span>
+          <span className="ru-plate-segment">{m[3]}</span>
+        </span>
+        <span className="ru-plate-region">
+          <span className="ru-plate-region-code">{m[4]}</span>
+          <span className="ru-plate-country">
+            <img alt="" src="/plate-rus.svg" width="63" height="15" loading="lazy" />
+          </span>
         </span>
       </span>
     </span>

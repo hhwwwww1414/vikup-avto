@@ -20,15 +20,12 @@ export interface ManagerRow {
 }
 
 const initialState: ActionState = { ok: false };
+const inputCls = "dashboard-input w-full px-3.5 py-2.5 text-sm font-medium";
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded-md bg-[var(--sidebar)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--sidebar-soft)] disabled:cursor-not-allowed disabled:opacity-60"
-    >
+    <button type="submit" disabled={pending} className="dashboard-button px-4 py-2.5 text-sm disabled:opacity-60">
       {pending ? "Сохранение..." : label}
     </button>
   );
@@ -43,16 +40,11 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)]">
-        {label}
-      </span>
+      <span className="mb-1.5 block text-xs font-bold text-[var(--muted-strong)]">{label}</span>
       {children}
     </label>
   );
 }
-
-const inputCls =
-  "w-full rounded-md border border-[var(--border)] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10";
 
 function ManagerFormFields({ row }: { row?: ManagerRow }) {
   return (
@@ -70,7 +62,7 @@ function ManagerFormFields({ row }: { row?: ManagerRow }) {
           type="password"
           required={!row}
           autoComplete="new-password"
-          placeholder={row ? "Оставьте пустым, чтобы не менять" : undefined}
+          placeholder={row ? "Не менять" : undefined}
           className={inputCls}
         />
       </Field>
@@ -89,12 +81,12 @@ function ManagerFormFields({ row }: { row?: ManagerRow }) {
           <option value="ADMIN">Админ</option>
         </select>
       </Field>
-      <label className="flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--panel-strong)] px-3 py-2.5 text-sm font-semibold">
+      <label className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-3.5 py-2.5 text-sm font-bold text-[var(--text)]">
         <input
           type="checkbox"
           name="isActive"
           defaultChecked={row ? row.isActive : true}
-          className="h-4 w-4 accent-blue-600"
+          className="h-4 w-4 rounded border-[var(--border-strong)] accent-blue-600"
         />
         Активен
       </label>
@@ -105,7 +97,7 @@ function ManagerFormFields({ row }: { row?: ManagerRow }) {
 function FormError({ error }: { error?: string }) {
   if (!error) return null;
   return (
-    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
       {error}
     </div>
   );
@@ -124,7 +116,7 @@ function CreateForm({ onDone }: { onDone: () => void }) {
     <form action={action} className="space-y-5">
       <ManagerFormFields />
       <FormError error={state.error} />
-      <SubmitButton label="Создать менеджера" />
+      <SubmitButton label="Создать" />
     </form>
   );
 }
@@ -158,16 +150,16 @@ function Modal({
 }) {
   return (
     <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto p-4">
-      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-50 mt-10 w-full max-w-2xl rounded-lg border border-[var(--border)] bg-white p-6 shadow-2xl">
+      <div className="absolute inset-0 bg-slate-950/35" onClick={onClose} />
+      <div className="dashboard-panel relative z-50 mt-10 w-full max-w-2xl p-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-xl font-bold text-[var(--text)]">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Закрыть"
-            className="grid h-9 w-9 place-items-center rounded-md text-[var(--muted)] transition hover:bg-slate-100 hover:text-[var(--text)]"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-[var(--border)] bg-white text-[var(--muted)] transition hover:text-[var(--text)]"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
@@ -193,70 +185,80 @@ export function ManagersClient({ rows }: { rows: ManagerRow[] }) {
   }
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-[var(--muted)]">
-          Пользователей: <span className="text-[var(--text)] tabular-nums">{rows.length}</span>
-        </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="rounded-md bg-[var(--sidebar)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--sidebar-soft)] focus:outline-none focus:ring-4 focus:ring-accent/15"
-        >
-          Создать менеджера
-        </button>
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="dashboard-panel p-5">
+          <div className="text-xs font-bold text-[var(--muted)]">Всего</div>
+          <div className="mt-3 text-3xl font-bold tabular-nums text-[var(--text)]">{rows.length}</div>
+        </section>
+        <section className="dashboard-panel p-5">
+          <div className="text-xs font-bold text-[var(--muted)]">Активные</div>
+          <div className="mt-3 text-3xl font-bold tabular-nums text-[var(--text)]">
+            {rows.filter((r) => r.isActive).length}
+          </div>
+        </section>
+        <section className="dashboard-panel p-5">
+          <div className="text-xs font-bold text-[var(--muted)]">Админы</div>
+          <div className="mt-3 text-3xl font-bold tabular-nums text-[var(--text)]">
+            {rows.filter((r) => r.role === "ADMIN").length}
+          </div>
+        </section>
+        <section className="dashboard-panel flex items-center justify-between gap-4 p-5">
+          <div>
+            <div className="text-xs font-bold text-[var(--muted)]">Доступ</div>
+            <div className="mt-2 text-sm font-semibold text-[var(--text)]">Команда</div>
+          </div>
+          <button onClick={() => setCreating(true)} className="dashboard-button px-4 py-2.5 text-sm">
+            Создать
+          </button>
+        </section>
       </div>
 
-      <section className="overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-card">
+      <section className="dashboard-panel overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
-            <thead className="bg-[var(--panel-strong)]">
-              <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
-                <th className="px-4 py-3 font-bold">Имя</th>
-                <th className="px-4 py-3 font-bold">Логин</th>
-                <th className="px-4 py-3 font-bold">Telegram ID</th>
-                <th className="px-4 py-3 font-bold">Роль</th>
-                <th className="px-4 py-3 font-bold">Авто</th>
-                <th className="px-4 py-3 font-bold">Статус</th>
-                <th className="px-4 py-3 font-bold"></th>
+          <table className="w-full min-w-[780px] text-sm">
+            <thead className="bg-[var(--panel-strong)] text-xs uppercase text-[var(--muted)]">
+              <tr className="text-left">
+                <th className="px-5 py-3 font-bold">Имя</th>
+                <th className="px-5 py-3 font-bold">Логин</th>
+                <th className="px-5 py-3 font-bold">Telegram</th>
+                <th className="px-5 py-3 font-bold">Роль</th>
+                <th className="px-5 py-3 font-bold">Авто</th>
+                <th className="px-5 py-3 font-bold">Статус</th>
+                <th className="px-5 py-3 font-bold"></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-[var(--border)] last:border-0">
-                  <td className="px-4 py-3 font-semibold">{r.name}</td>
-                  <td className="px-4 py-3 text-[var(--muted)]">{r.login}</td>
-                  <td className="px-4 py-3 text-[var(--muted)]">{r.telegramId ?? "-"}</td>
-                  <td className="px-4 py-3">{r.role === "ADMIN" ? "Админ" : "Менеджер"}</td>
-                  <td className="px-4 py-3 tabular-nums">{r.vehicles}</td>
-                  <td className="px-4 py-3">
+                <tr key={r.id} className="border-t border-[var(--border)]">
+                  <td className="px-5 py-4 font-bold text-[var(--text)]">{r.name}</td>
+                  <td className="px-5 py-4 font-medium text-[var(--muted-strong)]">{r.login}</td>
+                  <td className="px-5 py-4 font-medium text-[var(--muted-strong)]">{r.telegramId ?? "-"}</td>
+                  <td className="px-5 py-4 font-medium text-[var(--text)]">{r.role === "ADMIN" ? "Админ" : "Менеджер"}</td>
+                  <td className="px-5 py-4 font-semibold tabular-nums text-[var(--text)]">{r.vehicles}</td>
+                  <td className="px-5 py-4">
                     <span
-                      className={`inline-flex rounded-sm px-2 py-1 text-xs font-bold uppercase tracking-[0.06em] ${
-                        r.isActive
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-500"
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${
+                        r.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
                       }`}
                     >
-                      {r.isActive ? "Активен" : "Заблокирован"}
+                      {r.isActive ? "Активен" : "Блок"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-4">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setEditing(r)}
-                        className="rounded-md border border-[var(--border)] px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50"
+                        className="rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-xs font-bold text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--panel-strong)]"
                       >
                         Изменить
                       </button>
                       <button
                         onClick={() => onToggle(r)}
                         disabled={busyId === r.id}
-                        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
-                          r.isActive
-                            ? "text-red-600 hover:bg-red-50"
-                            : "text-emerald-700 hover:bg-emerald-50"
-                        }`}
+                        className="rounded-xl bg-[var(--text)] px-3 py-2 text-xs font-bold text-white transition hover:bg-[var(--accent)] disabled:opacity-50"
                       >
-                        {r.isActive ? "Заблокировать" : "Активировать"}
+                        {r.isActive ? "Блок" : "Активировать"}
                       </button>
                     </div>
                   </td>
@@ -273,7 +275,7 @@ export function ManagersClient({ rows }: { rows: ManagerRow[] }) {
         </Modal>
       )}
       {editing && (
-        <Modal title={`Изменить: ${editing.name}`} onClose={() => setEditing(null)}>
+        <Modal title={editing.name} onClose={() => setEditing(null)}>
           <EditForm row={editing} onDone={() => setEditing(null)} />
         </Modal>
       )}

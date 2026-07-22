@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { log } from "@/lib/logger";
-import { handleTelegramMessage } from "@/lib/ingest";
+import { handleTelegramCallback, handleTelegramMessage } from "@/lib/ingest";
 import type { TgUpdate } from "@/lib/telegram";
 
 export const runtime = "nodejs";
@@ -46,6 +46,13 @@ export async function POST(req: NextRequest) {
     // The long-running Node server keeps this promise alive.
     void handleTelegramMessage(msg).catch((e) =>
       log.error("telegram.async.error", { err: String(e) }),
+    );
+  }
+
+  const callbackQuery = update.callback_query;
+  if (callbackQuery && markSeen(update.update_id)) {
+    void handleTelegramCallback(callbackQuery).catch((e) =>
+      log.error("telegram.callback.async.error", { err: String(e) }),
     );
   }
 

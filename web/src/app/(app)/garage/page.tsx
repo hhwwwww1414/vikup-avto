@@ -52,50 +52,47 @@ export default async function GaragePage({
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end">
+      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
-            Рабочая база
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text)] sm:text-4xl">Гараж</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+            <span className="rounded-full bg-white px-3 py-1 font-semibold shadow-sm ring-1 ring-[var(--border)]">
+              {total} авто
+            </span>
+            {rawQuery ? (
+              <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 font-semibold text-[var(--accent)]">
+                Фильтр: {rawQuery}
+              </span>
+            ) : null}
           </div>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-[var(--text)]">Гараж</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-            Автомобили, добавленные менеджерами через Telegram-бота.
-          </p>
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-white p-2 shadow-card">
+        <div className="w-full xl:max-w-xl">
           <SearchBar initial={rawQuery} />
         </div>
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--border)] py-3">
-        <div className="text-sm font-semibold text-[var(--text)]">
-          Найдено: <span className="tabular-nums">{total}</span>
-        </div>
-        {rawQuery && (
-          <Link
-            href="/garage"
-            className="rounded-md border border-[var(--border)] bg-white px-3 py-1.5 text-sm font-semibold text-[var(--muted)] transition hover:text-[var(--text)]"
-          >
-            Сбросить поиск
+      {rawQuery && (
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 shadow-sm">
+          <span className="min-w-0 truncate text-sm font-medium text-[var(--muted-strong)]">
+            Показаны совпадения по запросу <span className="font-bold text-[var(--text)]">{rawQuery}</span>
+          </span>
+          <Link href="/garage" className="shrink-0 text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)]">
+            Сбросить
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
       {vehicles.length === 0 ? (
-        <div className="grid min-h-[320px] place-items-center rounded-lg border border-dashed border-slate-300 bg-white/70 p-8 text-center">
+        <div className="dashboard-panel grid min-h-[260px] place-items-center p-8 text-center">
           <div>
-            <div className="text-lg font-semibold text-[var(--text)]">
-              {rawQuery ? "Ничего не найдено" : "Гараж пока пуст"}
+            <div className="text-lg font-bold">{rawQuery ? "Ничего не найдено" : "Пока пусто"}</div>
+            <div className="mt-2 text-sm text-[var(--muted)]">
+              {rawQuery ? "Попробуйте другой номер или регион." : "Новые автомобили появятся здесь после загрузки."}
             </div>
-            <p className="mt-2 max-w-md text-sm leading-6 text-[var(--muted)]">
-              {rawQuery
-                ? `По запросу «${rawQuery}» нет сохраненных автомобилей.`
-                : "Отправьте фото автомобиля с видимым госномером в Telegram-бота."}
-            </p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {vehicles.map((v) => (
             <VehicleCard key={v.id} v={v} />
           ))}
@@ -103,19 +100,19 @@ export default async function GaragePage({
       )}
 
       {totalPages > 1 && (
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm">
+        <div className="mt-8 flex items-center justify-center gap-3 text-sm">
           {page > 1 && (
             <Link
               href={`/garage?${new URLSearchParams({
                 ...(rawQuery ? { q: rawQuery } : {}),
                 page: String(page - 1),
               })}`}
-              className="rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold transition hover:bg-slate-50"
+              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2 font-bold text-[var(--text)] shadow-sm transition hover:border-[var(--border-strong)]"
             >
               Назад
             </Link>
           )}
-          <span className="rounded-md bg-white px-3 py-2 font-semibold text-[var(--muted)] shadow-card">
+          <span className="rounded-xl border border-[var(--border)] bg-white px-4 py-2 font-bold text-[var(--muted-strong)] shadow-sm">
             {page} / {totalPages}
           </span>
           {page < totalPages && (
@@ -124,9 +121,9 @@ export default async function GaragePage({
                 ...(rawQuery ? { q: rawQuery } : {}),
                 page: String(page + 1),
               })}`}
-              className="rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold transition hover:bg-slate-50"
+              className="rounded-xl border border-[var(--border)] bg-white px-4 py-2 font-bold text-[var(--text)] shadow-sm transition hover:border-[var(--border-strong)]"
             >
-              Вперед
+              Вперёд
             </Link>
           )}
         </div>

@@ -3,24 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --bg: #eef1f4;
+  --bg: #f6f7fb;
   --panel: #ffffff;
-  --panel-strong: #f8fafc;
-  --border: #d7dde5;
-  --text: #17202c;
-  --muted: #667085;
-  --sidebar: #151b23;
-  --sidebar-soft: #202936;
-  --line: rgba(23, 32, 44, 0.12);
+  --panel-strong: #f9fafb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #111827;
+  --muted: #6b7280;
+  --muted-strong: #4b5563;
+  --sidebar: #ffffff;
+  --sidebar-soft: #f3f4f6;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --success: #10b981;
+  --danger: #ef4444;
+  --line: rgba(17, 24, 39, 0.1);
 }
 
 html,
 body {
   padding: 0;
   margin: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(238, 241, 244, 0) 260px),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
@@ -33,6 +38,41 @@ body {
 
 ::selection {
   background: rgba(37, 99, 235, 0.18);
+}
+
+.dashboard-panel {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-button {
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dashboard-button:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+  transform: translateY(-1px);
+}
+
+.dashboard-input {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.dashboard-input:focus {
+  border-color: rgba(37, 99, 235, 0.65);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 .plate-fallback {
@@ -49,23 +89,33 @@ body {
   white-space: nowrap;
 }
 
-.ru-plate {
-  display: grid;
-  height: 61px;
-  width: min(100%, 265px);
-  grid-template-columns: minmax(0, 200px) 65px;
-  align-items: stretch;
+.ru-plate-shell {
+  display: inline-block;
+  width: min(100%, 270px);
   overflow: hidden;
   border: 2.5px solid #050505;
-  border-radius: 7px;
+  border-radius: 9px;
   background: #fff;
   color: #050505;
   font-family: var(--font-plate), "Arial Narrow", Arial, sans-serif;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
   font-variant-numeric: tabular-nums;
+  vertical-align: top;
+}
+
+.vehicle-card-plate .ru-plate-shell {
+  width: min(100%, 270px);
+  max-width: 100%;
+}
+
+.ru-plate-grid {
+  display: grid;
+  height: 61px;
+  grid-template-columns: 200px 65px;
+  align-items: stretch;
 }
 
 .ru-plate-main {
@@ -79,6 +129,15 @@ body {
   font-weight: 800;
   text-align: center;
   text-transform: uppercase;
+}
+
+.ru-plate-segment {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .ru-plate-region {
@@ -102,20 +161,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.18rem;
-  padding-bottom: 0.08rem;
-  font-size: 0.52rem;
-  font-weight: 800;
+  padding-bottom: 0.125rem;
 }
 
 .ru-plate-country img {
-  width: 31px;
+  width: 50px;
   height: auto;
   user-select: none;
 }
 
 @media (max-width: 330px) {
-  .ru-plate {
+  .ru-plate-grid {
     grid-template-columns: minmax(0, 1fr) 62px;
   }
 
