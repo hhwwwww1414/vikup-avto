@@ -13,7 +13,10 @@ ENV NODE_ENV=production
 # Limit build-time heap so `next build` stays within a 2 GB VPS (+ swap).
 ENV NODE_OPTIONS=--max-old-space-size=1536
 
+# Copy the Prisma schema before install so the `postinstall` (prisma generate)
+# has the schema available.
 COPY package.json ./
+COPY prisma ./prisma
 RUN npm install --no-audit --no-fund
 
 COPY . .
