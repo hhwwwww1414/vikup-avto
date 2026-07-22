@@ -1,0 +1,21 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e16]
+  - generic [ref=e175]:
+    - complementary [ref=e176]:
+      - generic [ref=e177]: VIKUP
+      - navigation [ref=e178]:
+        - link "Гараж" [ref=e179] [cursor=pointer]:
+          - /url: /garage
+      - generic [ref=e181]:
+        - generic [ref=e182]: Александр
+        - generic [ref=e183]: Менеджер
+        - button "Выйти" [ref=e184] [cursor=pointer]
+    - main [ref=e185]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - heading "Гараж" [level=1] [ref=e188]
+          - generic [ref=e189]: "Всего: 0"
+        - generic [ref=e191]:
+          - textbox "Поиск по госномеру, напр. О101 или К575НК" [ref=e192]
+          - button "Искать" [ref=e193] [cursor=pointer]
+        - generic [ref=e197]: Пока нет автомобилей. Отправьте фото госномера в Telegram-бота.

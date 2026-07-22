@@ -1,0 +1,71 @@
+- generic [ref=e1]:
+  - alert [ref=e16]
+  - generic [ref=e17]:
+    - complementary [ref=e18]:
+      - generic [ref=e19]: VIKUP
+      - navigation [ref=e42]:
+        - link "Гараж" [ref=e43] [cursor=pointer]:
+          - /url: /garage
+        - link "Аналитика" [ref=e44] [cursor=pointer]:
+          - /url: /analytics
+        - link "Менеджеры" [ref=e45] [cursor=pointer]:
+          - /url: /managers
+      - generic [ref=e46]:
+        - generic [ref=e47]: Administrator
+        - generic [ref=e48]: Администратор
+        - button "Выйти" [ref=e49] [cursor=pointer]
+    - main [ref=e29]:
+      - generic [ref=e50]:
+        - heading "Менеджеры" [level=1] [ref=e51]
+        - generic [ref=e52]:
+          - button "+ Создать менеджера" [active] [ref=e54] [cursor=pointer]
+          - table [ref=e56]:
+            - rowgroup [ref=e57]:
+              - row [ref=e58]:
+                - columnheader "Имя" [ref=e59]
+                - columnheader "Логин" [ref=e60]
+                - columnheader "Telegram ID" [ref=e61]
+                - columnheader "Роль" [ref=e62]
+                - columnheader "Авто" [ref=e63]
+                - columnheader "Статус" [ref=e64]
+                - columnheader [ref=e65]
+            - rowgroup [ref=e66]:
+              - row [ref=e67]:
+                - cell "Administrator" [ref=e68]
+                - cell "admin" [ref=e69]
+                - cell "—" [ref=e70]
+                - cell "ADMIN" [ref=e71]
+                - cell "0" [ref=e72]
+                - cell "Активен" [ref=e73]
+                - cell [ref=e75]:
+                  - generic [ref=e76]:
+                    - button "Изменить" [ref=e77] [cursor=pointer]
+                    - button "Заблокировать" [ref=e78] [cursor=pointer]
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - heading "Новый менеджер" [level=2] [ref=e83]
+              - button [ref=e84] [cursor=pointer]
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - generic [ref=e89]:
+                  - generic [ref=e90]: Имя
+                  - textbox "Имя" [ref=e91]
+                - generic [ref=e92]:
+                  - generic [ref=e93]: Логин / Email
+                  - textbox "Логин / Email" [ref=e94]
+                - generic [ref=e95]:
+                  - generic [ref=e96]: Пароль
+                  - textbox "Пароль" [ref=e97]
+                - generic [ref=e98]:
+                  - generic [ref=e99]: Telegram ID
+                  - textbox "Telegram ID" [ref=e100]:
+                    - /placeholder: напр. 123456789
+                - generic [ref=e101]:
+                  - generic [ref=e102]: Роль
+                  - combobox "Роль" [ref=e103]:
+                    - option "MANAGER" [selected]
+                    - option "ADMIN"
+                - generic [ref=e104]:
+                  - checkbox "Активен" [checked] [ref=e105]
+                  - text: Активен
+              - button "Создать менеджера" [ref=e106] [cursor=pointer]
