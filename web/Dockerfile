@@ -9,21 +9,25 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-ENV NODE_ENV=production
 # Limit build-time heap so `next build` stays within a 2 GB VPS (+ swap).
 ENV NODE_OPTIONS=--max-old-space-size=1536
 
-# Copy the Prisma schema before install so the `postinstall` (prisma generate)
-# has the schema available.
+# Install ALL dependencies (incl. dev: typescript, tailwind, prisma, tsx) which
+# are required to build. NODE_ENV is intentionally NOT "production" here, and
+# --include=dev is set so dev deps are installed even if it were.
+# Copy the Prisma schema first so the `postinstall` (prisma generate) works.
 COPY package.json ./
 COPY prisma ./prisma
-RUN npm install --no-audit --no-fund
+RUN npm install --include=dev --no-audit --no-fund
 
 COPY . .
 
 RUN npx prisma generate
 RUN npm run build
 
+# Runtime is production; compose also sets this. Dev deps remain installed so
+# `prisma migrate deploy` and `tsx create-admin` work in the same image.
+ENV NODE_ENV=production
 EXPOSE 3000
 
 # Apply migrations, ensure the admin exists, then start the server.
