@@ -24,6 +24,13 @@ services:
       NODE_ENV: production
       TZ: ${TZ:-Europe/Moscow}
       OCR_URL: http://ocr:8000
+    # This Russian VPS reaches only SOME of Telegram's round-robin DC IPs
+    # (others are network-throttled). Pin api.telegram.org to a reachable DC IP
+    # so outbound Bot API calls + photo downloads are reliable. TLS SNI stays
+    # api.telegram.org, so the Let's Encrypt-style cert still validates.
+    # Override with TELEGRAM_API_IP in .env if this DC ever becomes unreachable.
+    extra_hosts:
+      - "api.telegram.org:${TELEGRAM_API_IP:-149.154.167.220}"
     depends_on:
       - ocr
     expose:
