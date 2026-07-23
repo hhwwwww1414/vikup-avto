@@ -28,7 +28,6 @@ type TeleMessage = {
 
 const REPORT_URL_RE = /https?:\/\/\S+/i;
 const REPORT_READY_RE = /(отчет|отчёт|report|готов|найден|результат|телефон|\d+(?:[.,]\d+)?\s*%)/iu;
-const VEHICLE_SEARCH_BUTTON_RE = /(авто|автомоб|госномер|номер|транспорт|vehicle|car)/iu;
 
 function messageText(message: TeleMessage): string {
   return String(message.message ?? message.text ?? "");
@@ -102,8 +101,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     const startedAt = Date.now();
     const seenMessageIds = new Set<number>();
 
-    await withFloodWaitRetry(() => client.sendMessage(bot, { message: "/start" }));
-    await this.clickVehicleSearchIfPresent(bot, seenMessageIds);
+    await this.markRecentMessagesSeen(bot, seenMessageIds);
     await withFloodWaitRetry(() => client.sendMessage(bot, { message: plate }));
 
     const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt);
@@ -140,25 +138,14 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     };
   }
 
-  private async clickVehicleSearchIfPresent(
+  private async markRecentMessagesSeen(
     bot: string,
     seenMessageIds: Set<number>,
   ): Promise<void> {
     const client = await this.getClient();
-    for await (const raw of client.iterMessages(bot, { limit: 5 })) {
+    for await (const raw of client.iterMessages(bot, { limit: 20 })) {
       const message = raw as TeleMessage;
       if (typeof message.id === "number") seenMessageIds.add(message.id);
-      const hasVehicleButton = message.buttons?.some((row) =>
-        row.some((button) => VEHICLE_SEARCH_BUTTON_RE.test(button.text ?? "")),
-      );
-      if (hasVehicleButton && message.click) {
-        await withFloodWaitRetry(() =>
-          message.click?.({
-            text: (value: string) => VEHICLE_SEARCH_BUTTON_RE.test(value),
-          }) ?? Promise.resolve(),
-        );
-        return;
-      }
     }
   }
 

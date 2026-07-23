@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { normalizePlateInput } from "@/lib/plate";
+import { GarageAutoRefresh } from "./GarageAutoRefresh";
 import { SearchBar } from "./SearchBar";
 import { VehicleCard, type VehicleView } from "./VehicleCard";
 
@@ -76,6 +77,7 @@ export default async function GaragePage({
 
   return (
     <div className="mx-auto max-w-7xl">
+      <GarageAutoRefresh />
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--text)] sm:text-4xl">Гараж</h1>

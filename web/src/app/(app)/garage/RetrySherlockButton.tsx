@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function RetrySherlockButton({ vehicleId }: { vehicleId: string }) {
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   async function retry() {
     if (busy) return;
@@ -13,7 +15,8 @@ export function RetrySherlockButton({ vehicleId }: { vehicleId: string }) {
         method: "POST",
       });
       if (response.ok) {
-        window.location.reload();
+        router.refresh();
+        window.setTimeout(() => router.refresh(), 1000);
       }
     } finally {
       setBusy(false);
