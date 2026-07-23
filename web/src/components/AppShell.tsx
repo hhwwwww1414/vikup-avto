@@ -34,6 +34,18 @@ const NAV: NavItem[] = [
     ),
   },
   {
+    href: "/intelligence/experiments",
+    label: "Intelligence",
+    adminOnly: true,
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 18V6m16 12V6" />
+        <path d="M7 9h10M7 15h10" />
+        <path d="M9 6v12m6-12v12" />
+      </svg>
+    ),
+  },
+  {
     href: "/managers",
     label: "Менеджеры",
     adminOnly: true,

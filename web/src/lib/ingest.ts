@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "./db";
 import { log } from "./logger";
+import { enqueueIntelligenceJob } from "./intelligence/run";
 import { recognizePlate } from "./ocr";
 import { storeVehiclePhoto } from "./s3";
 import {
@@ -203,7 +204,7 @@ export async function handleTelegramMessage(msg: TgMessage): Promise<void> {
     }
 
     // 7. Create Vehicle.
-    await prisma.vehicle.create({
+    const vehicle = await prisma.vehicle.create({
       data: {
         photoKey: stored.photoKey,
         licensePlate: plate.display,
@@ -212,7 +213,11 @@ export async function handleTelegramMessage(msg: TgMessage): Promise<void> {
         telegramMessageId: BigInt(msg.message_id),
       },
     });
-    log.info("vehicle.created", { plate: plate.normalized, userId: user.id });
+    log.info("vehicle.created", { vehicleId: vehicle.id, plate: plate.normalized, userId: user.id });
+
+    await enqueueIntelligenceJob(vehicle.id).catch((e) => {
+      log.warn("intelligence.enqueue.failed", { vehicleId: vehicle.id, err: String(e) });
+    });
 
     // 8. Confirm.
     await finishStatus();

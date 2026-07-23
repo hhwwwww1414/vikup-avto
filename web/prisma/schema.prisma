@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -13,18 +13,37 @@ enum Role {
   MANAGER
 }
 
-model User {
-  id           String    @id @default(uuid())
-  name         String
-  login        String    @unique
-  passwordHash String    @map("password_hash")
-  role         Role      @default(MANAGER)
-  telegramId   BigInt?   @unique @map("telegram_id")
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+enum IntelligenceJobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
 
-  vehicles     Vehicle[]
+enum ExperimentRunStatus {
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum SearchRunStatus {
+  RUNNING
+  DONE
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  login        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(MANAGER)
+  telegramId   BigInt?  @unique @map("telegram_id")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  vehicles Vehicle[]
 
   @@map("users")
 }
@@ -38,10 +57,120 @@ model Vehicle {
   telegramMessageId      BigInt?  @map("telegram_message_id")
   createdAt              DateTime @default(now()) @map("created_at")
 
-  manager                User     @relation(fields: [managerId], references: [id])
+  manager          User              @relation(fields: [managerId], references: [id])
+  intelligenceJobs IntelligenceJob[]
+  experimentRuns   ExperimentRun[]
 
   @@index([licensePlateNormalized])
   @@index([createdAt])
   @@index([managerId])
   @@map("vehicles")
+}
+
+model IntelligenceJob {
+  id              String                @id @default(uuid())
+  vehicleId       String                @map("vehicle_id")
+  status          IntelligenceJobStatus @default(PENDING)
+  strategy        String
+  strategyVersion String                @map("strategy_version")
+  attempts        Int                   @default(0)
+  lastError       String?               @map("last_error")
+  metrics         Json?
+  startedAt       DateTime?             @map("started_at")
+  finishedAt      DateTime?             @map("finished_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  vehicle        Vehicle         @relation(fields: [vehicleId], references: [id])
+  experimentRuns ExperimentRun[]
+
+  @@index([status, createdAt])
+  @@index([vehicleId])
+  @@map("intelligence_jobs")
+}
+
+model ExperimentRun {
+  id              String              @id @default(uuid())
+  vehicleId       String              @map("vehicle_id")
+  jobId           String?             @map("job_id")
+  strategy        String
+  strategyVersion String              @map("strategy_version")
+  status          ExperimentRunStatus @default(RUNNING)
+  parameters      Json?
+  metrics         Json?
+  results         Json?
+  startedAt       DateTime            @default(now()) @map("started_at")
+  finishedAt      DateTime?           @map("finished_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  vehicle    Vehicle          @relation(fields: [vehicleId], references: [id])
+  job        IntelligenceJob? @relation(fields: [jobId], references: [id])
+  searchRuns SearchRun[]
+
+  @@index([vehicleId, startedAt])
+  @@index([strategy, strategyVersion])
+  @@index([status])
+  @@map("experiment_runs")
+}
+
+model SearchRun {
+  id              String          @id @default(uuid())
+  experimentRunId String          @map("experiment_run_id")
+  provider        String
+  status          SearchRunStatus @default(RUNNING)
+  metrics         Json?
+  error           String?
+  startedAt       DateTime        @default(now()) @map("started_at")
+  finishedAt      DateTime?       @map("finished_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  experimentRun ExperimentRun @relation(fields: [experimentRunId], references: [id])
+  queries       SearchQuery[]
+
+  @@index([experimentRunId])
+  @@index([provider])
+  @@map("search_runs")
+}
+
+model SearchQuery {
+  id                String   @id @default(uuid())
+  searchRunId       String   @map("search_run_id")
+  query             String
+  queryType         String   @map("query_type")
+  generatedBy       String   @map("generated_by")
+  resultCount       Int      @default(0) @map("result_count")
+  usefulResultCount Int      @default(0) @map("useful_result_count")
+  vehicleMatchCount Int      @default(0) @map("vehicle_match_count")
+  contactFound      Boolean  @default(false) @map("contact_found")
+  latencyMs         Int?     @map("latency_ms")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  searchRun SearchRun      @relation(fields: [searchRunId], references: [id])
+  results   SearchResult[]
+
+  @@index([searchRunId])
+  @@index([query])
+  @@map("search_queries")
+}
+
+model SearchResult {
+  id            String   @id @default(uuid())
+  searchQueryId String   @map("search_query_id")
+  source        String
+  url           String?
+  title         String?
+  snippet       String?
+  raw           Json?
+  normalized    Json?
+  derived       Json?
+  confidence    Float?
+  fetchedAt     DateTime @default(now()) @map("fetched_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  searchQuery SearchQuery @relation(fields: [searchQueryId], references: [id])
+
+  @@index([searchQueryId])
+  @@index([source])
+  @@index([url])
+  @@map("search_results")
 }
