@@ -36,15 +36,21 @@ function statusLabel(status: string | null): string {
     return "Ищем контакт...";
   }
   if (status === "FAILED") return "Поиск не удался";
-  if (status === "DONE") return "Sherlock Report";
+  if (status === "DONE") return "Контакты не найдены";
   return "Поиск ожидает";
 }
 
 export function VehicleCard({ v }: { v: VehicleView }) {
   const src = `/api/image?key=${encodeURIComponent(thumbKey(v.photoKey))}`;
   const full = `/api/image?key=${encodeURIComponent(v.photoKey)}`;
-  const hasContact = Boolean(v.sherlockBestPhone);
-  const alternatives = v.sherlockPhoneCandidates.filter((candidate) => candidate.phone !== v.sherlockBestPhone);
+  const topConfidence = v.sherlockPhoneCandidates[0]?.providerConfidence ?? null;
+  const primaryCandidates = v.sherlockBestPhone
+    ? v.sherlockPhoneCandidates.filter((candidate) => candidate.phone === v.sherlockBestPhone)
+    : v.sherlockPhoneCandidates.filter((candidate) => candidate.providerConfidence === topConfidence);
+  const hasContact = primaryCandidates.length > 0;
+  const alternatives = v.sherlockPhoneCandidates.filter(
+    (candidate) => !primaryCandidates.some((primary) => primary.phone === candidate.phone),
+  );
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-card">
@@ -70,14 +76,18 @@ export function VehicleCard({ v }: { v: VehicleView }) {
           </div>
           {hasContact ? (
             <div className="mt-2">
-              <div className="text-base font-black text-[var(--text)]">
-                {formatPhone(v.sherlockBestPhone ?? "")}
+              <div className="space-y-1">
+                {primaryCandidates.map((candidate) => (
+                  <div key={candidate.phone} className="text-base font-black text-[var(--text)]">
+                    {formatPhone(candidate.phone)}
+                  </div>
+                ))}
               </div>
               <div className="mt-1 text-xs font-semibold text-[var(--muted-strong)]">
-                Sherlock confidence: {formatConfidence(v.sherlockBestProviderConfidence ?? 0)}
+                Sherlock confidence: {formatConfidence(topConfidence ?? v.sherlockBestProviderConfidence ?? 0)}
               </div>
               <div className="mt-1 text-xs text-[var(--muted)]">Источник: Sherlock Report</div>
-              {v.sherlockHasMultipleTopCandidates ? (
+              {v.sherlockHasMultipleTopCandidates || primaryCandidates.length > 1 ? (
                 <div className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-semibold text-amber-800">
                   Несколько номеров имеют одинаковый maximum confidence.
                 </div>
@@ -102,7 +112,7 @@ export function VehicleCard({ v }: { v: VehicleView }) {
                   </div>
                 ))}
               </div>
-          </details>
+            </details>
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

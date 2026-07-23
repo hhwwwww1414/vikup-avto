@@ -137,10 +137,28 @@ export async function retrySherlockLookupForVehicle(vehicleId: string): Promise<
 }
 
 export async function acquireNextSherlockLookupJob() {
+  const now = new Date();
+  const staleLockedBefore = new Date(
+    now.getTime() - Math.max(env.sherlockLookupTimeoutMs, 5 * 60_000),
+  );
   const job = await prisma.sherlockLookupJob.findFirst({
     where: {
-      status: { in: [SherlockLookupStatus.PENDING, SherlockLookupStatus.FAILED] },
-      nextRunAt: { lte: new Date() },
+      OR: [
+        {
+          status: { in: [SherlockLookupStatus.PENDING, SherlockLookupStatus.FAILED] },
+          nextRunAt: { lte: now },
+        },
+        {
+          status: {
+            in: [
+              SherlockLookupStatus.RUNNING,
+              SherlockLookupStatus.WAITING_REPORT,
+              SherlockLookupStatus.PARSING,
+            ],
+          },
+          lockedAt: { lte: staleLockedBefore },
+        },
+      ],
     },
     orderBy: [{ nextRunAt: "asc" }, { createdAt: "asc" }],
   });

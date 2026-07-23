@@ -27,7 +27,10 @@ type TeleMessage = {
 };
 
 const REPORT_URL_RE = /https?:\/\/\S+/i;
-const REPORT_READY_RE = /(отчет|отчёт|report|готов|найден|результат|телефон|\d+(?:[.,]\d+)?\s*%)/iu;
+const REPORT_READY_RE =
+  /(\u043e\u0442\u0447(?:\u0435|\u0451)\u0442|report|\u0433\u043e\u0442\u043e\u0432|\u043d\u0430\u0439\u0434\u0435\u043d|\u043e\u0431\u043d\u0430\u0440\u0443\u0436\u0435\u043d|\u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442|\u0442\u0435\u043b\u0435\u0444\u043e\u043d|\d+(?:[.,]\d+)?\s*%)/iu;
+const FULL_REPORT_BUTTON_RE =
+  /(full|\(\d+\s*\u0448\u0442\)|\u043f\u043e\u043b\u043d\u044b\u0439\s+\u043e\u0442\u0447(?:\u0435|\u0451)\u0442)/iu;
 
 function messageText(message: TeleMessage): string {
   return String(message.message ?? message.text ?? "");
@@ -55,6 +58,14 @@ async function withFloodWaitRetry<T>(fn: () => Promise<T>): Promise<T> {
 function firstReportUrl(text: string): string | null {
   const raw = text.match(REPORT_URL_RE)?.[0];
   return raw ? raw.replace(/[)\].,;]+$/, "") : null;
+}
+
+function hasFullReportButton(message: TeleMessage): boolean {
+  return Boolean(
+    message.buttons?.some((row) =>
+      row.some((button) => FULL_REPORT_BUTTON_RE.test(button.text ?? "")),
+    ),
+  );
 }
 
 async function fetchReportUrl(url: string): Promise<{ body: Buffer; contentType: string }> {
@@ -106,7 +117,18 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
 
     const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt);
     const text = messageText(message);
-    const reportUrl = firstReportUrl(text);
+    const fullReportUrl = await this.openFullReportUrl(message);
+    const reportUrl = fullReportUrl ?? firstReportUrl(text);
+
+    if (fullReportUrl) {
+      const fetched = await fetchReportUrl(fullReportUrl);
+      return {
+        reportBody: fetched.body,
+        contentType: fetched.contentType,
+        reportUrl: fullReportUrl,
+        rawMetadata: { telegramMessageId: message.id, delivery: "full_report_url" },
+      };
+    }
 
     if (message.media) {
       const downloaded = await withFloodWaitRetry(() => client.downloadMedia(message as never, {}));
@@ -138,6 +160,20 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     };
   }
 
+  private async openFullReportUrl(message: TeleMessage): Promise<string | null> {
+    if (!message.click || !hasFullReportButton(message)) return null;
+    const result = await withFloodWaitRetry(() =>
+      message.click?.({
+        text: (value: string) => FULL_REPORT_BUTTON_RE.test(value),
+      }) ?? Promise.resolve(null),
+    );
+    if (typeof result === "string") return firstReportUrl(result);
+    if (result && typeof result === "object" && "url" in result) {
+      return firstReportUrl(String((result as { url?: unknown }).url ?? ""));
+    }
+    return firstReportUrl(String(result ?? ""));
+  }
+
   private async markRecentMessagesSeen(
     bot: string,
     seenMessageIds: Set<number>,
@@ -163,7 +199,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
       if (!message) return;
       const text = messageText(message);
       if (message.id) seenMessageIds.add(message.id);
-      if (REPORT_READY_RE.test(text) || message.media) {
+      if (REPORT_READY_RE.test(text) || message.media || hasFullReportButton(message)) {
         resolved = message;
       }
     };
@@ -194,7 +230,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
       if (id && seenMessageIds.has(id)) continue;
       const text = messageText(message);
       if (id) seenMessageIds.add(id);
-      if (REPORT_READY_RE.test(text) || message.media) return message;
+      if (REPORT_READY_RE.test(text) || message.media || hasFullReportButton(message)) return message;
     }
     return null;
   }

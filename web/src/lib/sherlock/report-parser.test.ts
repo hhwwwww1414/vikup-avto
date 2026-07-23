@@ -67,6 +67,36 @@ test("pickTopPhoneCandidates keeps ties instead of choosing randomly", () => {
   ]);
 });
 
+test("parseSherlockReport extracts phones from Sherlock html report cards", () => {
+  const parsed = parseSherlockReport(
+    `
+      <div class="report-card__label">&#1058;&#1077;&#1083;&#1077;&#1092;&#1086;&#1085;</div>
+      <span class='copyable' data-clipboard-text="79258393949">
+        <strong>79258393949</strong>
+      </span>
+      <small style="font-size: 0.6em; color: #999;">50%</small>
+      <span class='copyable' data-clipboard-text="79263129809">
+        <strong>79263129809</strong>
+      </span>
+      <small style="font-size: 0.6em; color: #999;">46.15%</small>
+    `,
+    { reportUrl: "https://example.test/report/1", searchedPlate: "А037ОР799" },
+  );
+
+  assert.deepEqual(
+    parsed.phoneCandidates.map((candidate) => ({
+      phone: candidate.phone,
+      providerConfidence: candidate.providerConfidence,
+      rank: candidate.rank,
+    })),
+    [
+      { phone: "79258393949", providerConfidence: 50, rank: 1 },
+      { phone: "79263129809", providerConfidence: 46.15, rank: 2 },
+    ],
+  );
+  assert.equal(parsed.bestPhone, "79258393949");
+});
+
 test("buildSherlockReportKey stores artifacts under vehicle and lookup ids", () => {
   assert.equal(
     buildSherlockReportKey("vehicle-1", "lookup-1", "application/pdf"),
