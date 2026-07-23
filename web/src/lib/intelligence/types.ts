@@ -41,6 +41,7 @@ export interface StrategyRunSummary {
   usefulResultCount: number;
   vehicleMatchCount: number;
   contactFound: boolean;
+  contactCandidateCount: number;
   latencyMs: number;
   errors: string[];
 }

@@ -3,12 +3,19 @@ import { prisma } from "@/lib/db";
 import { log } from "@/lib/logger";
 import { generatePlateQueries } from "./plate-query";
 import { InternalHistoryProvider } from "./providers/internal-history";
+import { SearxngProvider } from "./providers/searxng";
 import type { SearchProvider, StrategyRunSummary } from "./types";
 
-export const DEFAULT_INTELLIGENCE_STRATEGY = "internal_history_baseline";
-export const DEFAULT_INTELLIGENCE_STRATEGY_VERSION = "1";
+export const DEFAULT_INTELLIGENCE_STRATEGY = "public_vehicle_discovery";
+export const DEFAULT_INTELLIGENCE_STRATEGY_VERSION = "2";
 
-const providers: SearchProvider[] = [new InternalHistoryProvider()];
+function activeProviders(): SearchProvider[] {
+  const searxng = new SearxngProvider();
+  return [
+    new InternalHistoryProvider(),
+    ...(searxng.enabled() ? [searxng] : []),
+  ];
+}
 
 export async function enqueueIntelligenceJob(vehicleId: string): Promise<void> {
   await prisma.intelligenceJob.create({
@@ -56,15 +63,25 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
 
   const started = Date.now();
   const queries = generatePlateQueries(job.vehicle.licensePlateNormalized);
+  const providers = activeProviders();
   const summary: StrategyRunSummary = {
     queryCount: queries.length,
     resultCount: 0,
     usefulResultCount: 0,
     vehicleMatchCount: 0,
     contactFound: false,
+    contactCandidateCount: 0,
     latencyMs: 0,
     errors: [],
   };
+  const contactCandidates: Array<{
+    source: string;
+    url?: string;
+    title?: string;
+    publicPhone?: string;
+    publicEmail?: string;
+    confidence?: number;
+  }> = [];
 
   const experiment = await prisma.experimentRun.create({
     data: {
@@ -101,12 +118,24 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
           const latencyMs = Date.now() - queryStarted;
           const vehicleMatchCount = hits.filter((hit) => hit.plate === job.vehicle.licensePlateNormalized).length;
           const contactFound = hits.some((hit) => Boolean(hit.publicPhone || hit.publicEmail));
+          const queryContactCandidates = hits.filter((hit) => Boolean(hit.publicPhone || hit.publicEmail));
 
           summary.resultCount += hits.length;
           summary.usefulResultCount += hits.length;
           summary.vehicleMatchCount += vehicleMatchCount;
           summary.contactFound ||= contactFound;
+          summary.contactCandidateCount += queryContactCandidates.length;
           providerResultCount += hits.length;
+          contactCandidates.push(
+            ...queryContactCandidates.map((hit) => ({
+              source: hit.source,
+              url: hit.url,
+              title: hit.title,
+              publicPhone: hit.publicPhone,
+              publicEmail: hit.publicEmail,
+              confidence: hit.confidence,
+            })),
+          );
 
           await prisma.searchQuery.create({
             data: {
@@ -175,9 +204,10 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
         finishedAt: new Date(),
         metrics: { ...summary },
         results: {
-          bestPublicContact: null,
-          confidence: null,
-          note: "Baseline internal history strategy does not infer owner or seller contacts.",
+          bestPublicContact: contactCandidates[0] ?? null,
+          contactCandidates,
+          confidence: contactCandidates[0]?.confidence ?? null,
+          note: "Contacts are explicit public seller/dealer/profile candidates, not inferred vehicle owner phones.",
         },
       },
     });

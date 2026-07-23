@@ -77,12 +77,30 @@ The admin dashboard is available at:
 /intelligence/experiments
 ```
 
+## Phase 2 Public Web Discovery
+
+`public_vehicle_discovery` v2 keeps `internal_history` and adds `searxng` when
+`SEARXNG_URL` is configured. The provider calls the SearXNG JSON API:
+
+```text
+/search?q=<query>&format=json&language=ru&categories=general
+```
+
+If JSON output is disabled on the SearXNG instance, the provider records the
+HTTP error as negative evidence in the `SearchRun`.
+
+Contact extraction is deliberately constrained. A phone or email becomes a
+candidate only when it is explicitly present in a public search result and the
+result has vehicle-sale context, such as a known listing/dealer domain or
+listing words like sale, dealer, listing, VIN, mileage, or trade-in. These
+records are stored as `PublicContact`-style candidates in experiment results;
+they are not treated as owner phones.
+
 ## Next Hypotheses
 
-1. Add a public web search provider behind the same `SearchProvider` interface.
-2. Benchmark query variants across at least 20 real vehicles before tuning.
-3. Store fetched page evidence separately before extracting VIN, listing status,
+1. Run SearXNG against at least 20 real vehicles and compare query variants.
+2. Store fetched page evidence separately before extracting VIN, listing status,
    seller identity, or public contact candidates.
-4. Add failure codes for no trace, parser failure, false match, stale contact,
+3. Add failure codes for no trace, parser failure, false match, stale contact,
    and search recall misses.
-5. Add vehicle-level debug replay only after baseline runs exist in the database.
+4. Add vehicle-level debug replay only after baseline runs exist in the database.
