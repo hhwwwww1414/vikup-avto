@@ -72,7 +72,7 @@ export function buildSherlockReportKey(
   lookupId: string,
   contentType: string,
 ): string {
-  return `intelligence/sherlock/${vehicleId}/${lookupId}/report.${inferReportExtension(contentType)}`;
+  return `sherlock/${vehicleId}/${lookupId}/report.${inferReportExtension(contentType)}`;
 }
 
 export function parseSherlockReport(raw: string, options: ParseOptions = {}): ParsedSherlockReport {

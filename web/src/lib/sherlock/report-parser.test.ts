@@ -70,10 +70,10 @@ test("pickTopPhoneCandidates keeps ties instead of choosing randomly", () => {
 test("buildSherlockReportKey stores artifacts under vehicle and lookup ids", () => {
   assert.equal(
     buildSherlockReportKey("vehicle-1", "lookup-1", "application/pdf"),
-    "intelligence/sherlock/vehicle-1/lookup-1/report.pdf",
+    "sherlock/vehicle-1/lookup-1/report.pdf",
   );
   assert.equal(
     buildSherlockReportKey("vehicle-1", "lookup-1", "text/html; charset=utf-8"),
-    "intelligence/sherlock/vehicle-1/lookup-1/report.html",
+    "sherlock/vehicle-1/lookup-1/report.html",
   );
 });

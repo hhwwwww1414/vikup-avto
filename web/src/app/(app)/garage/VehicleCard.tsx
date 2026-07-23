@@ -1,7 +1,6 @@
 import { Plate } from "@/components/Plate";
 import { formatCardDate } from "@/lib/date";
 import { thumbKey } from "@/lib/s3-keys";
-import Link from "next/link";
 import { RetrySherlockButton } from "./RetrySherlockButton";
 
 export interface VehicleView {
@@ -103,16 +102,10 @@ export function VehicleCard({ v }: { v: VehicleView }) {
                   </div>
                 ))}
               </div>
-            </details>
+          </details>
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Link
-              href={`/garage/${v.id}`}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-bold text-[var(--text)] transition hover:border-[var(--border-strong)]"
-            >
-              Подробнее
-            </Link>
             {v.sherlockReportId ? (
               <a
                 href={`/api/sherlock/reports/${v.sherlockReportId}`}

@@ -23,7 +23,7 @@ function s3(): S3Client {
 }
 
 export function isAllowedSherlockReportKey(key: string): boolean {
-  return /^intelligence\/sherlock\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/report\.(pdf|html|json|txt|bin)$/i.test(
+  return /^sherlock\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+\/report\.(pdf|html|json|txt|bin)$/i.test(
     key,
   );
 }

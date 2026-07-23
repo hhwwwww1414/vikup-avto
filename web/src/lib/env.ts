@@ -98,16 +98,4 @@ export const env = {
     const v = process.env.OCR_CONFIDENCE_MIN;
     return v ? Number(v) : 0.4;
   },
-  // Vehicle intelligence discovery
-  get searxngUrl() {
-    return optional("SEARXNG_URL");
-  },
-  get searxngTimeoutMs() {
-    const v = process.env.SEARXNG_TIMEOUT_MS;
-    return v ? Number(v) : 12_000;
-  },
-  get searxngMaxResults() {
-    const v = process.env.SEARXNG_MAX_RESULTS;
-    return v ? Number(v) : 10;
-  },
 };

@@ -11,8 +11,6 @@
     "test": "node --test",
     "migrate": "prisma migrate deploy",
     "migrate:dev": "prisma migrate dev",
-    "intelligence:worker": "tsx scripts/intelligence-worker.ts",
-    "intelligence:run-once": "tsx scripts/intelligence-worker.ts --once",
     "create-admin": "tsx scripts/create-admin.ts",
     "sherlock:worker": "tsx scripts/sherlock-worker.ts",
     "postinstall": "prisma generate"
