@@ -1,11 +1,18 @@
 import type { SourceHit } from "./types";
 
-const USEFUL_CONFIDENCE_MIN = 0.45;
+const USEFUL_CONTACT_CONFIDENCE_MIN = 0.65;
+const USEFUL_CONTEXT_CONFIDENCE_MIN = 0.7;
 
 export function isUsefulSourceHit(hit: SourceHit): boolean {
-  if (hit.publicPhone || hit.publicEmail) return true;
   if (hit.plate || hit.vin) return true;
-  return (hit.confidence ?? 0) >= USEFUL_CONFIDENCE_MIN;
+  if (hit.publicPhone || hit.publicEmail) return (hit.confidence ?? 0) >= USEFUL_CONTACT_CONFIDENCE_MIN;
+  return (hit.confidence ?? 0) >= USEFUL_CONTEXT_CONFIDENCE_MIN;
+}
+
+export function isActionableContactHit(hit: SourceHit): boolean {
+  if (!hit.publicPhone && !hit.publicEmail) return false;
+  if (hit.plate || hit.vin) return true;
+  return (hit.confidence ?? 0) >= USEFUL_CONTACT_CONFIDENCE_MIN;
 }
 
 function rankScore(hit: SourceHit): number {

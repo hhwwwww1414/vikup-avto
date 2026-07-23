@@ -3,7 +3,7 @@ import { log } from "@/lib/logger";
 import { generatePlateQueries, PLATE_QUERY_GENERATOR_VERSION } from "./plate-query";
 import { InternalHistoryProvider } from "./providers/internal-history";
 import { SearxngProvider } from "./providers/searxng";
-import { isUsefulSourceHit, rankSourceHits } from "./source-quality";
+import { isActionableContactHit, isUsefulSourceHit, rankSourceHits } from "./source-quality";
 import type { SearchProvider, StrategyRunSummary } from "./types";
 
 export const DEFAULT_INTELLIGENCE_STRATEGY = "public_vehicle_discovery";
@@ -117,8 +117,8 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
           }));
           const latencyMs = Date.now() - queryStarted;
           const vehicleMatchCount = hits.filter((hit) => hit.plate === job.vehicle.licensePlateNormalized).length;
-          const contactFound = hits.some((hit) => Boolean(hit.publicPhone || hit.publicEmail));
-          const queryContactCandidates = hits.filter((hit) => Boolean(hit.publicPhone || hit.publicEmail));
+          const queryContactCandidates = hits.filter(isActionableContactHit);
+          const contactFound = queryContactCandidates.length > 0;
           const usefulResultCount = hits.filter(isUsefulSourceHit).length;
 
           summary.resultCount += hits.length;

@@ -25,9 +25,22 @@ test("isUsefulSourceHit rejects low-confidence generic search noise", () => {
   );
 });
 
-test("isUsefulSourceHit accepts plate matches and public contacts", () => {
+test("isUsefulSourceHit accepts plate matches and high-confidence public contacts", () => {
   assert.equal(isUsefulSourceHit(hit({ plate: "В698ОУ797", confidence: 0.7 })), true);
-  assert.equal(isUsefulSourceHit(hit({ publicPhone: "+79991234567", confidence: 0.55 })), true);
+  assert.equal(isUsefulSourceHit(hit({ publicPhone: "+79991234567", confidence: 0.72 })), true);
+});
+
+test("isUsefulSourceHit rejects weak contacts without vehicle evidence", () => {
+  assert.equal(
+    isUsefulSourceHit(
+      hit({
+        publicPhone: "+79991234567",
+        confidence: 0.4925,
+        title: "Госномера по региону 797",
+      }),
+    ),
+    false,
+  );
 });
 
 test("rankSourceHits puts contact and exact vehicle evidence first", () => {
