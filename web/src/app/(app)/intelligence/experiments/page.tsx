@@ -127,7 +127,7 @@ export default async function IntelligenceExperimentsPage() {
                 <th className="px-5 py-3 font-bold">Queries</th>
                 <th className="px-5 py-3 font-bold">Results</th>
                 <th className="px-5 py-3 font-bold">Matches</th>
-                <th className="px-5 py-3 font-bold">Contact</th>
+                <th className="px-5 py-3 font-bold">Contacts</th>
                 <th className="px-5 py-3 font-bold">Runtime</th>
                 <th className="px-5 py-3 font-bold">Providers</th>
               </tr>
@@ -150,7 +150,7 @@ export default async function IntelligenceExperimentsPage() {
                     <td className="px-5 py-4 tabular-nums">{metricNumber(run.metrics, "queryCount") ?? 0}</td>
                     <td className="px-5 py-4 tabular-nums">{metricNumber(run.metrics, "resultCount") ?? 0}</td>
                     <td className="px-5 py-4 tabular-nums">{metricNumber(run.metrics, "vehicleMatchCount") ?? 0}</td>
-                    <td className="px-5 py-4">{run.metrics && (run.metrics as Record<string, unknown>).contactFound ? "yes" : "no"}</td>
+                    <td className="px-5 py-4 tabular-nums">{metricNumber(run.metrics, "contactCandidateCount") ?? 0}</td>
                     <td className="px-5 py-4 tabular-nums">{formatMs(metricNumber(run.metrics, "latencyMs"))}</td>
                     <td className="px-5 py-4 text-[var(--muted-strong)]">
                       {run.searchRuns.map((searchRun) => `${searchRun.provider}:${searchRun.status}`).join(", ") || "-"}
