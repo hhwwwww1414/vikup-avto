@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { extractPublicContacts } from "./contact-extraction.ts";
+import { extractPublicContacts, isPublicVehicleSaleContext } from "./contact-extraction.ts";
 
 test("extractPublicContacts accepts explicit phones in vehicle listing context", () => {
   const contacts = extractPublicContacts({
@@ -23,4 +23,16 @@ test("extractPublicContacts rejects phones without vehicle sale context", () => 
   });
 
   assert.deepEqual(contacts, []);
+});
+
+test("isPublicVehicleSaleContext recognizes Russian listing snippets outside known domains", () => {
+  const context = isPublicVehicleSaleContext({
+    url: "https://example.com/cars/123",
+    title: "Продажа автомобиля Toyota",
+    snippet: "Объявление продавца, пробег 84 000 км",
+  });
+
+  assert.equal(context.ok, true);
+  assert.ok(context.signals.includes("vehicle_context:продажа"));
+  assert.ok(context.signals.includes("vehicle_context:объявление"));
 });

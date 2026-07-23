@@ -1,6 +1,6 @@
 import { formatPlateDisplay, normalizePlateInput } from "../plate.ts";
 
-export const PLATE_QUERY_GENERATOR_VERSION = "plate_query_generator_v1";
+export const PLATE_QUERY_GENERATOR_VERSION = "plate_query_generator_v2";
 
 const CYRILLIC_TO_LATIN: Record<string, string> = {
   "А": "A",
@@ -22,6 +22,37 @@ export interface GeneratedPlateQuery {
   queryType: string;
   generatedBy: string;
 }
+
+const LISTING_DOMAINS = [
+  "avito.ru",
+  "drom.ru",
+  "auto.ru",
+  "youla.ru",
+  "cars.ru",
+  "am.ru",
+  "bibika.ru",
+];
+
+const TRACE_DOMAINS = [
+  "drive2.ru",
+  "vin.drom.ru",
+  "avtocod.ru",
+  "avtonomer.net",
+  "platesmania.com",
+  "nomerogram.ru",
+  "photocarsh.ru",
+  "fototruck.ru",
+];
+
+const VEHICLE_KEYWORDS = [
+  "автомобиль",
+  "продажа",
+  "купить",
+  "авто",
+  "объявление",
+  "госномер",
+  "VIN",
+];
 
 function toLatinLookalike(value: string): string {
   return value
@@ -72,9 +103,19 @@ export function generatePlateQueries(rawPlate: string): GeneratedPlateQuery[] {
   addUnique(out, seen, `"${normalized}"`, "plate_quoted");
   addUnique(out, seen, `"${latin}"`, "plate_latin_quoted");
 
-  for (const word of ["автомобиль", "продажа", "купить", "авто", "VIN"]) {
+  for (const word of VEHICLE_KEYWORDS) {
     addUnique(out, seen, `"${normalized}" ${word}`, "plate_keyword");
     addUnique(out, seen, `"${latin}" ${word}`, "plate_latin_keyword");
+  }
+
+  for (const domain of LISTING_DOMAINS) {
+    addUnique(out, seen, `"${normalized}" site:${domain}`, "plate_listing_site");
+    addUnique(out, seen, `"${latin}" site:${domain}`, "plate_listing_site_latin");
+  }
+
+  for (const domain of TRACE_DOMAINS) {
+    addUnique(out, seen, `"${normalized}" site:${domain}`, "plate_trace_site");
+    addUnique(out, seen, `"${latin}" site:${domain}`, "plate_trace_site_latin");
   }
 
   return out;

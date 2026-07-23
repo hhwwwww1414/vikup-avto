@@ -16,6 +16,21 @@ test("generatePlateQueries emits measurable plate variants", () => {
   assert.ok(queries.every((query) => query.generatedBy === PLATE_QUERY_GENERATOR_VERSION));
 });
 
+test("generatePlateQueries targets vehicle listing and trace domains", () => {
+  const queries = generatePlateQueries("В698ОУ797");
+  const values = queries.map((query) => query.query);
+
+  assert.ok(values.includes("\"В698ОУ797\" site:avito.ru"));
+  assert.ok(values.includes("\"В698ОУ797\" site:drom.ru"));
+  assert.ok(values.includes("\"В698ОУ797\" site:auto.ru"));
+  assert.ok(values.includes("\"B698OY797\" site:drive2.ru"));
+  assert.ok(values.includes("\"В698ОУ797\" госномер"));
+  assert.ok(values.includes("\"В698ОУ797\" объявление"));
+  assert.ok(queries.some((query) => query.queryType === "plate_listing_site"));
+  assert.ok(queries.some((query) => query.queryType === "plate_trace_site"));
+  assert.equal(new Set(values).size, values.length);
+});
+
 test("generatePlateQueries returns no queries for empty input", () => {
   assert.deepEqual(generatePlateQueries(""), []);
 });

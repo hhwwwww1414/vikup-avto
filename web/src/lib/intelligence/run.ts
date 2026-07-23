@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db";
 import { log } from "@/lib/logger";
-import { generatePlateQueries } from "./plate-query";
+import { generatePlateQueries, PLATE_QUERY_GENERATOR_VERSION } from "./plate-query";
 import { InternalHistoryProvider } from "./providers/internal-history";
 import { SearxngProvider } from "./providers/searxng";
+import { isUsefulSourceHit, rankSourceHits } from "./source-quality";
 import type { SearchProvider, StrategyRunSummary } from "./types";
 
 export const DEFAULT_INTELLIGENCE_STRATEGY = "public_vehicle_discovery";
@@ -89,7 +90,7 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
       strategy: job.strategy,
       strategyVersion: job.strategyVersion,
       parameters: {
-        queryGenerator: "plate_query_generator_v1",
+        queryGenerator: PLATE_QUERY_GENERATOR_VERSION,
         providers: providers.map((provider) => provider.name),
       },
     },
@@ -110,17 +111,18 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
       try {
         for (const generated of queries) {
           const queryStarted = Date.now();
-          const hits = await provider.search(generated.query, {
+          const hits = rankSourceHits(await provider.search(generated.query, {
             vehicleId: job.vehicleId,
             plateNormalized: job.vehicle.licensePlateNormalized,
-          });
+          }));
           const latencyMs = Date.now() - queryStarted;
           const vehicleMatchCount = hits.filter((hit) => hit.plate === job.vehicle.licensePlateNormalized).length;
           const contactFound = hits.some((hit) => Boolean(hit.publicPhone || hit.publicEmail));
           const queryContactCandidates = hits.filter((hit) => Boolean(hit.publicPhone || hit.publicEmail));
+          const usefulResultCount = hits.filter(isUsefulSourceHit).length;
 
           summary.resultCount += hits.length;
-          summary.usefulResultCount += hits.length;
+          summary.usefulResultCount += usefulResultCount;
           summary.vehicleMatchCount += vehicleMatchCount;
           summary.contactFound ||= contactFound;
           summary.contactCandidateCount += queryContactCandidates.length;
@@ -143,7 +145,7 @@ export async function runIntelligenceJob(jobId: string): Promise<StrategyRunSumm
               queryType: generated.queryType,
               generatedBy: generated.generatedBy,
               resultCount: hits.length,
-              usefulResultCount: hits.length,
+              usefulResultCount,
               vehicleMatchCount,
               contactFound,
               latencyMs,
