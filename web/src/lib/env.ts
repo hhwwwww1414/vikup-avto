@@ -42,6 +42,35 @@ export const env = {
   get telegramWebhookSecret() {
     return optional("TELEGRAM_WEBHOOK_SECRET");
   },
+  get telegramApiId() {
+    const v = required("TELEGRAM_API_ID");
+    const n = Number(v);
+    if (!Number.isInteger(n)) {
+      throw new Error("TELEGRAM_API_ID must be an integer");
+    }
+    return n;
+  },
+  get telegramApiHash() {
+    return required("TELEGRAM_API_HASH");
+  },
+  get telegramSession() {
+    return required("TELEGRAM_SESSION");
+  },
+  get sherlockBotUsername() {
+    return optional("SHERLOCK_BOT_USERNAME", "pYxUyS_MbSG_bot");
+  },
+  get sherlockLookupTimeoutMs() {
+    const v = process.env.SHERLOCK_LOOKUP_TIMEOUT_MS;
+    return v ? Number(v) : 180_000;
+  },
+  get sherlockWorkerPollMs() {
+    const v = process.env.SHERLOCK_WORKER_POLL_MS;
+    return v ? Number(v) : 5_000;
+  },
+  get sherlockFreshReportTtlHours() {
+    const v = process.env.SHERLOCK_FRESH_REPORT_TTL_HOURS;
+    return v ? Number(v) : 24 * 14;
+  },
   // S3
   get s3Endpoint() {
     return required("S3_ENDPOINT");

@@ -4,6 +4,7 @@ import { log } from "./logger";
 import { enqueueIntelligenceJob } from "./intelligence/run";
 import { recognizePlate } from "./ocr";
 import { storeVehiclePhoto } from "./s3";
+import { enqueueSherlockLookupForVehicle } from "./sherlock/jobs";
 import {
   deleteMessage,
   downloadFile,
@@ -212,12 +213,16 @@ export async function handleTelegramMessage(msg: TgMessage): Promise<void> {
         managerId: user.id,
         telegramMessageId: BigInt(msg.message_id),
       },
+      select: { id: true },
     });
     log.info("vehicle.created", { vehicleId: vehicle.id, plate: plate.normalized, userId: user.id });
 
     await enqueueIntelligenceJob(vehicle.id).catch((e) => {
       log.warn("intelligence.enqueue.failed", { vehicleId: vehicle.id, err: String(e) });
     });
+    void enqueueSherlockLookupForVehicle(vehicle.id).catch((e) =>
+      log.error("sherlock.enqueue.failed", { vehicleId: vehicle.id, err: String(e) }),
+    );
 
     // 8. Confirm.
     await finishStatus();

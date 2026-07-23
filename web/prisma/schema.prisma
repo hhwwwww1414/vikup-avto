@@ -20,6 +20,15 @@ enum IntelligenceJobStatus {
   FAILED
 }
 
+enum SherlockLookupStatus {
+  PENDING
+  RUNNING
+  WAITING_REPORT
+  PARSING
+  DONE
+  FAILED
+}
+
 enum ExperimentRunStatus {
   RUNNING
   DONE
@@ -49,17 +58,25 @@ model User {
 }
 
 model Vehicle {
-  id                     String   @id @default(uuid())
-  photoKey               String   @map("photo_key")
-  licensePlate           String   @map("license_plate")
-  licensePlateNormalized String   @map("license_plate_normalized")
-  managerId              String   @map("manager_id")
-  telegramMessageId      BigInt?  @map("telegram_message_id")
-  createdAt              DateTime @default(now()) @map("created_at")
+  id                              String    @id @default(uuid())
+  photoKey                        String    @map("photo_key")
+  licensePlate                    String    @map("license_plate")
+  licensePlateNormalized          String    @map("license_plate_normalized")
+  managerId                       String    @map("manager_id")
+  telegramMessageId               BigInt?   @map("telegram_message_id")
+  sherlockLookupStatus            SherlockLookupStatus?
+  sherlockBestPhone               String?   @map("sherlock_best_phone")
+  sherlockBestProviderConfidence  Float?    @map("sherlock_best_provider_confidence")
+  sherlockHasMultipleTopCandidates Boolean   @default(false) @map("sherlock_has_multiple_top_candidates")
+  sherlockUpdatedAt               DateTime? @map("sherlock_updated_at")
+  createdAt                       DateTime  @default(now()) @map("created_at")
 
   manager          User              @relation(fields: [managerId], references: [id])
   intelligenceJobs IntelligenceJob[]
   experimentRuns   ExperimentRun[]
+  sherlockLookupJobs              SherlockLookupJob[]
+  sherlockReports                 SherlockReport[]
+  sherlockPhoneCandidates         SherlockPhoneCandidate[]
 
   @@index([licensePlateNormalized])
   @@index([createdAt])
@@ -173,4 +190,72 @@ model SearchResult {
   @@index([source])
   @@index([url])
   @@map("search_results")
+}
+
+model SherlockLookupJob {
+  id           String                @id @default(uuid())
+  vehicleId    String                @map("vehicle_id")
+  searchedPlate String               @map("searched_plate")
+  status       SherlockLookupStatus  @default(PENDING)
+  attempts     Int                   @default(0)
+  maxAttempts  Int                   @default(3) @map("max_attempts")
+  nextRunAt    DateTime              @default(now()) @map("next_run_at")
+  lockedAt     DateTime?             @map("locked_at")
+  startedAt    DateTime?             @map("started_at")
+  finishedAt   DateTime?             @map("finished_at")
+  errorMessage String?               @map("error_message")
+  rawMetadata  Json                  @default("{}") @map("raw_metadata")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  vehicle      Vehicle               @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  report       SherlockReport?
+  phoneCandidates SherlockPhoneCandidate[]
+
+  @@index([status, nextRunAt])
+  @@index([vehicleId, createdAt])
+  @@map("sherlock_lookup_jobs")
+}
+
+model SherlockReport {
+  id             String   @id @default(uuid())
+  vehicleId      String   @map("vehicle_id")
+  lookupJobId    String   @unique @map("lookup_job_id")
+  searchedPlate  String   @map("searched_plate")
+  reportUrl      String?  @map("report_url")
+  artifactKey    String   @map("artifact_key")
+  contentType    String   @map("content_type")
+  normalizedData Json     @map("normalized_data")
+  rawMetadata    Json     @default("{}") @map("raw_metadata")
+  parserVersion  Int      @map("parser_version")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  lookupJob       SherlockLookupJob @relation(fields: [lookupJobId], references: [id], onDelete: Cascade)
+  phoneCandidates SherlockPhoneCandidate[]
+
+  @@index([vehicleId, createdAt])
+  @@map("sherlock_reports")
+}
+
+model SherlockPhoneCandidate {
+  id                  String   @id @default(uuid())
+  vehicleId           String   @map("vehicle_id")
+  lookupJobId         String   @map("lookup_job_id")
+  reportId            String   @map("report_id")
+  phone               String
+  providerConfidence  Float    @map("provider_confidence")
+  rank                Int
+  source              String   @default("SHERLOCK_REPORT")
+  fetchedAt           DateTime @map("fetched_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  vehicle             Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  lookupJob           SherlockLookupJob @relation(fields: [lookupJobId], references: [id], onDelete: Cascade)
+  report              SherlockReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, phone])
+  @@index([vehicleId, rank])
+  @@index([lookupJobId])
+  @@map("sherlock_phone_candidates")
 }

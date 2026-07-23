@@ -14,6 +14,7 @@
     "intelligence:worker": "tsx scripts/intelligence-worker.ts",
     "intelligence:run-once": "tsx scripts/intelligence-worker.ts --once",
     "create-admin": "tsx scripts/create-admin.ts",
+    "sherlock:worker": "tsx scripts/sherlock-worker.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "react-dom": "^18.3.1",
     "server-only": "^0.0.1",
     "sharp": "^0.33.5",
+    "teleproto": "^1.228.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -58,6 +58,19 @@ services:
       - web
       - searxng
 
+  sherlock-worker:
+    build: ./web
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Europe/Moscow}
+    extra_hosts:
+      - "api.telegram.org:${TELEGRAM_API_IP:-149.154.167.220}"
+    depends_on:
+      - web
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run sherlock:worker"]
+
   searxng:
     image: docker.io/searxng/searxng:latest
     restart: unless-stopped

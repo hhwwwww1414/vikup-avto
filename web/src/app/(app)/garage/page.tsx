@@ -34,7 +34,25 @@ export default async function GaragePage({
         photoKey: true,
         licensePlateNormalized: true,
         createdAt: true,
+        sherlockLookupStatus: true,
+        sherlockBestPhone: true,
+        sherlockBestProviderConfidence: true,
+        sherlockHasMultipleTopCandidates: true,
         manager: { select: { name: true } },
+        sherlockReports: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { id: true },
+        },
+        sherlockPhoneCandidates: {
+          orderBy: { rank: "asc" },
+          take: 6,
+          select: {
+            phone: true,
+            providerConfidence: true,
+            rank: true,
+          },
+        },
       },
     }),
     prisma.vehicle.count({ where }),
@@ -46,6 +64,12 @@ export default async function GaragePage({
     licensePlateNormalized: r.licensePlateNormalized,
     managerName: r.manager.name,
     createdAt: r.createdAt,
+    sherlockLookupStatus: r.sherlockLookupStatus,
+    sherlockBestPhone: r.sherlockBestPhone,
+    sherlockBestProviderConfidence: r.sherlockBestProviderConfidence,
+    sherlockHasMultipleTopCandidates: r.sherlockHasMultipleTopCandidates,
+    sherlockReportId: r.sherlockReports[0]?.id ?? null,
+    sherlockPhoneCandidates: r.sherlockPhoneCandidates,
   }));
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
