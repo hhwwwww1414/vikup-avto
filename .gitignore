@@ -20,6 +20,10 @@ venv/
 ocr/models_cache/
 ocr/test_images/
 
+# Local UI / browser test artifacts
+.playwright-mcp/
+/mobile-garage.png
+
 # Build / OS
 dist/
 build/
