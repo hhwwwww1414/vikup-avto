@@ -31,5 +31,13 @@ build/
 Thumbs.db
 *.log
 
+# Local browser/debug artifacts
+.playwright-mcp/
+*-preview.png
+dashboard-*.png
+garage-live.png
+plate-frame-preview.png
+positivus-*.png
+
 # Prisma
 web/prisma/*.db
