@@ -1,6 +1,7 @@
 import { Plate } from "@/components/Plate";
 import { formatCardDate } from "@/lib/date";
 import { thumbKey } from "@/lib/s3-keys";
+import Link from "next/link";
 
 export interface VehicleView {
   id: string;
@@ -28,7 +29,7 @@ export function VehicleCard({ v }: { v: VehicleView }) {
         </div>
       </a>
 
-      <div className="p-4">
+      <Link href={`/garage/${v.id}`} className="block p-4 focus:outline-none focus:ring-4 focus:ring-blue-500/10">
         <div className="vehicle-card-plate flex justify-center">
           <Plate value={v.licensePlateNormalized} />
         </div>
@@ -42,7 +43,7 @@ export function VehicleCard({ v }: { v: VehicleView }) {
             В базе
           </span>
         </div>
-      </div>
+      </Link>
     </article>
   );
 }

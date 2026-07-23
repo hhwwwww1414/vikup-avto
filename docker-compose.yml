@@ -24,6 +24,7 @@ services:
       NODE_ENV: production
       TZ: ${TZ:-Europe/Moscow}
       OCR_URL: http://ocr:8000
+      SEARXNG_URL: ${SEARXNG_URL:-http://searxng:8080}
     # This Russian VPS reaches only SOME of Telegram's round-robin DC IPs
     # (others are network-throttled). Pin api.telegram.org to a reachable DC IP
     # so outbound Bot API calls + photo downloads are reliable. TLS SNI stays
@@ -33,6 +34,7 @@ services:
       - "api.telegram.org:${TELEGRAM_API_IP:-149.154.167.220}"
     depends_on:
       - ocr
+      - searxng
     expose:
       - "3000"
     healthcheck:
@@ -50,9 +52,22 @@ services:
       NODE_ENV: production
       TZ: ${TZ:-Europe/Moscow}
       OCR_URL: http://ocr:8000
+      SEARXNG_URL: ${SEARXNG_URL:-http://searxng:8080}
     command: ["npm", "run", "intelligence:worker"]
     depends_on:
       - web
+      - searxng
+
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-vikup-internal-searxng-change-me}
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+      - searxng_cache:/var/cache/searxng
+    expose:
+      - "8080"
 
   caddy:
     image: caddy:2-alpine
@@ -70,3 +85,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  searxng_cache:
