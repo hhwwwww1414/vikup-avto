@@ -1,4 +1,3 @@
-import "server-only";
 import { prisma } from "@/lib/db";
 import { normalizePlateInput } from "@/lib/plate";
 import type { SearchContext, SearchProvider, SourceHit } from "../types";

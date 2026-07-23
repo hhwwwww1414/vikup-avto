@@ -1,4 +1,3 @@
-import "server-only";
 import { env } from "@/lib/env";
 import { normalizePlateInput } from "@/lib/plate";
 import { extractPublicContacts } from "../contact-extraction";

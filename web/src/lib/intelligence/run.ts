@@ -1,4 +1,3 @@
-import "server-only";
 import { prisma } from "@/lib/db";
 import { log } from "@/lib/logger";
 import { generatePlateQueries } from "./plate-query";
