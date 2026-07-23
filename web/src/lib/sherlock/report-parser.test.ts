@@ -97,6 +97,28 @@ test("parseSherlockReport extracts phones from Sherlock html report cards", () =
   assert.equal(parsed.bestPhone, "79258393949");
 });
 
+test("parseSherlockReport keeps Sherlock html phones without confidence", () => {
+  const parsed = parseSherlockReport(
+    `
+      <div class="report-card__label">&#1058;&#1077;&#1083;&#1077;&#1092;&#1086;&#1085;</div>
+      <span class='copyable' data-clipboard-text="79685684940">
+        <strong>79685684940</strong>
+      </span>
+    `,
+    { reportUrl: "https://example.test/report/2", searchedPlate: "В698ОУ797" },
+  );
+
+  assert.deepEqual(
+    parsed.phoneCandidates.map((candidate) => ({
+      phone: candidate.phone,
+      providerConfidence: candidate.providerConfidence,
+      rank: candidate.rank,
+    })),
+    [{ phone: "79685684940", providerConfidence: 0, rank: 1 }],
+  );
+  assert.equal(parsed.bestPhone, "79685684940");
+});
+
 test("buildSherlockReportKey stores artifacts under vehicle and lookup ids", () => {
   assert.equal(
     buildSherlockReportKey("vehicle-1", "lookup-1", "application/pdf"),

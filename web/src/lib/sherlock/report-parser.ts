@@ -32,6 +32,8 @@ const PHONE_WITH_CONFIDENCE =
   /(?:\+?7|8)[\s().-]*(\d{3})[\s().-]*(\d{3})[\s().-]*(\d{2})[\s().-]*(\d{2})(?!\d).{0,80}?(\d+(?:[.,]\d+)?)\s*%/giu;
 const CLIPBOARD_PHONE_WITH_CONFIDENCE =
   /data-clipboard-text=["'](?:\+?7|8)[\s().-]*(\d{3})[\s().-]*(\d{3})[\s().-]*(\d{2})[\s().-]*(\d{2})["'][\s\S]{0,800}?(\d+(?:[.,]\d+)?)\s*%/giu;
+const CLIPBOARD_PHONE =
+  /data-clipboard-text=["'](?:\+?7|8)[\s().-]*(\d{3})[\s().-]*(\d{3})[\s().-]*(\d{2})[\s().-]*(\d{2})["']/giu;
 const VIN_RE = /\b([A-HJ-NPR-Z0-9]{17})\b/iu;
 const PLATE_RE = /(?:госномер|номер|plate)\s*[:\-]?\s*([A-ZА-Я]\s*\d{3}\s*[A-ZА-Я]{2}\s*\d{2,3})/iu;
 
@@ -94,6 +96,18 @@ export function parseSherlockReport(raw: string, options: ParseOptions = {}): Pa
           rank: candidates.length + 1,
         });
       }
+    }
+  }
+
+  CLIPBOARD_PHONE.lastIndex = 0;
+  while ((match = CLIPBOARD_PHONE.exec(raw)) !== null) {
+    const phone = `7${match[1]}${match[2]}${match[3]}${match[4]}`;
+    if (phone.length === 11 && phone.startsWith("7")) {
+      candidates.push({
+        phone,
+        providerConfidence: 0,
+        rank: candidates.length + 1,
+      });
     }
   }
 
