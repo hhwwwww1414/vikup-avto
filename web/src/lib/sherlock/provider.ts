@@ -198,10 +198,11 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
       const message = event.message;
       if (!message) return;
       const text = messageText(message);
-      if (message.id) seenMessageIds.add(message.id);
       if (REPORT_READY_RE.test(text) || message.media || hasFullReportButton(message)) {
         resolved = message;
+        return;
       }
+      if (message.id) seenMessageIds.add(message.id);
     };
 
     client.addEventHandler(handler, new NewMessage({ chats: [bot] }));
@@ -229,8 +230,8 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
       const id = typeof message.id === "number" ? message.id : null;
       if (id && seenMessageIds.has(id)) continue;
       const text = messageText(message);
-      if (id) seenMessageIds.add(id);
       if (REPORT_READY_RE.test(text) || message.media || hasFullReportButton(message)) return message;
+      if (id) seenMessageIds.add(id);
     }
     return null;
   }
