@@ -49,6 +49,19 @@ test("isSherlockReportMessageForPlate matches latin look-alike plate in Sherlock
   );
 });
 
+test("isSherlockReportMessageForPlate matches B668MA777 report for Cyrillic plate", () => {
+  assert.equal(
+    isSherlockReportMessageForPlate(
+      {
+        message: "📄 Запрос: B668MA777\n🔍 Обнаружено 56 совпадений.",
+        buttons: [[{ text: "📄 Открыть полный отчет (56 шт)" }]],
+      },
+      "В668МА777",
+    ),
+    true,
+  );
+});
+
 test("isSherlockReportMessageForPlate matches real Sherlock full report prompt", () => {
   assert.equal(
     isSherlockReportMessageForPlate(

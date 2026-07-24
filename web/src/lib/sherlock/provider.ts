@@ -22,6 +22,7 @@ export interface SherlockProviderResult {
 
 export interface SherlockProvider {
   lookupByPlate(plate: string): Promise<SherlockProviderResult>;
+  recoverLatestByPlate?(plate: string): Promise<SherlockProviderResult | null>;
 }
 
 type TeleMessage = {
@@ -106,14 +107,22 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     const startedAt = Date.now();
     const seenMessageIds = new Set<number>();
 
-    const recovered = await this.findLatestReportLikeMessage(bot, new Set<number>(), plate, 80);
-    if (recovered) return this.resultFromMessage(recovered, plate);
+    const recovered = await this.recoverLatestByPlate(plate);
+    if (recovered) return recovered;
 
     await this.markRecentMessagesSeen(bot, seenMessageIds);
     await this.sendPlateWithSpacing(client, bot, plate);
 
     const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt, plate);
     return this.resultFromMessage(message, plate);
+  }
+
+  async recoverLatestByPlate(plate: string): Promise<SherlockProviderResult | null> {
+    const bot = env.sherlockBotUsername.startsWith("@")
+      ? env.sherlockBotUsername
+      : `@${env.sherlockBotUsername}`;
+    const message = await this.findLatestReportLikeMessage(bot, new Set<number>(), plate, 120);
+    return message ? this.resultFromMessage(message, plate) : null;
   }
 
   private async sendPlateWithSpacing(

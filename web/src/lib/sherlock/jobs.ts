@@ -3,7 +3,11 @@ import { prisma } from "../db";
 import { env } from "../env";
 import { log } from "../logger";
 import { buildSherlockReportKey, parseSherlockReport } from "./report-parser";
-import { TeleprotoSherlockProvider, type SherlockProvider } from "./provider";
+import {
+  TeleprotoSherlockProvider,
+  type SherlockProvider,
+  type SherlockProviderResult,
+} from "./provider";
 import { storeSherlockReportArtifact } from "./storage";
 
 const RETRY_BACKOFF_MINUTES = [2, 10, 30];
@@ -226,8 +230,13 @@ async function failJob(jobId: string, error: unknown): Promise<void> {
   const vehicleData =
     latestReusableReport && isReusableSherlockReport(latestReusableReport)
       ? vehicleSherlockDataFromReport(latestReusableReport)
+      : exhausted
+        ? {
+            sherlockLookupStatus: SherlockLookupStatus.FAILED,
+            sherlockUpdatedAt: new Date(),
+          }
       : {
-          sherlockLookupStatus: SherlockLookupStatus.FAILED,
+          sherlockLookupStatus: SherlockLookupStatus.PENDING,
           sherlockUpdatedAt: new Date(),
         };
 
@@ -249,6 +258,115 @@ async function failJob(jobId: string, error: unknown): Promise<void> {
   ]);
 }
 
+async function completeSherlockLookupJob(
+  job: { id: string; vehicleId: string; searchedPlate: string },
+  result: SherlockProviderResult,
+): Promise<void> {
+  await prisma.sherlockLookupJob.update({
+    where: { id: job.id },
+    data: { status: SherlockLookupStatus.PARSING },
+  });
+
+  const rawText =
+    result.contentType.includes("text") || result.contentType.includes("json")
+      ? result.reportBody.toString("utf8")
+      : "";
+  const parsed = parseSherlockReport(rawText, {
+    searchedPlate: job.searchedPlate,
+    reportUrl: result.reportUrl,
+  });
+  const artifactKey = buildSherlockReportKey(job.vehicleId, job.id, result.contentType);
+  await storeSherlockReportArtifact({
+    key: artifactKey,
+    body: result.reportBody,
+    contentType: result.contentType,
+  });
+
+  await prisma.$transaction(async (tx) => {
+    const report = await tx.sherlockReport.create({
+      data: {
+        vehicleId: job.vehicleId,
+        lookupJobId: job.id,
+        searchedPlate: job.searchedPlate,
+        reportUrl: result.reportUrl,
+        artifactKey,
+        contentType: result.contentType,
+        normalizedData: asJson(parsed),
+        rawMetadata: asJson(result.rawMetadata),
+        parserVersion: parsed.parserVersion,
+      },
+    });
+    if (parsed.phoneCandidates.length > 0) {
+      await tx.sherlockPhoneCandidate.createMany({
+        data: parsed.phoneCandidates.map((candidate) => ({
+          vehicleId: job.vehicleId,
+          lookupJobId: job.id,
+          reportId: report.id,
+          phone: candidate.phone,
+          providerConfidence: candidate.providerConfidence,
+          rank: candidate.rank,
+          source: candidate.source,
+          fetchedAt: new Date(candidate.fetchedAt),
+        })),
+      });
+    }
+    await tx.vehicle.update({
+      where: { id: job.vehicleId },
+      data: {
+        sherlockLookupStatus: SherlockLookupStatus.DONE,
+        sherlockBestPhone: parsed.bestPhone,
+        sherlockBestProviderConfidence: parsed.bestProviderConfidence,
+        sherlockHasMultipleTopCandidates: parsed.hasMultipleTopCandidates,
+        sherlockUpdatedAt: new Date(),
+      },
+    });
+    await tx.sherlockLookupJob.update({
+      where: { id: job.id },
+      data: {
+        status: SherlockLookupStatus.DONE,
+        finishedAt: new Date(),
+        lockedAt: null,
+        rawMetadata: asJson(result.rawMetadata),
+      },
+    });
+  });
+
+  log.info("sherlock.lookup.done", {
+    jobId: job.id,
+    vehicleId: job.vehicleId,
+    plate: job.searchedPlate,
+    candidates: parsed.phoneCandidates.length,
+  });
+}
+
+async function recoverSherlockLookupJobFromHistory(
+  job: { id: string; vehicleId: string; searchedPlate: string },
+  provider: SherlockProvider,
+): Promise<boolean> {
+  if (!provider.recoverLatestByPlate) return false;
+
+  try {
+    const recovered = await provider.recoverLatestByPlate(job.searchedPlate);
+    if (!recovered) return false;
+
+    log.warn("sherlock.lookup.recoveredAfterFailure", {
+      jobId: job.id,
+      vehicleId: job.vehicleId,
+      plate: job.searchedPlate,
+    });
+    await completeSherlockLookupJob(job, recovered);
+    return true;
+  } catch (error) {
+    log.warn("sherlock.lookup.recoveryFailed", {
+      jobId: job.id,
+      vehicleId: job.vehicleId,
+      plate: job.searchedPlate,
+      err: String(error),
+    });
+    return false;
+  }
+}
+
 export async function processSherlockLookupJob(
   jobId: string,
   provider: SherlockProvider = new TeleprotoSherlockProvider(),
@@ -265,83 +383,10 @@ export async function processSherlockLookupJob(
       data: { status: SherlockLookupStatus.WAITING_REPORT },
     });
     const result = await provider.lookupByPlate(job.searchedPlate);
-
-    await prisma.sherlockLookupJob.update({
-      where: { id: job.id },
-      data: { status: SherlockLookupStatus.PARSING },
-    });
-
-    const rawText =
-      result.contentType.includes("text") || result.contentType.includes("json")
-        ? result.reportBody.toString("utf8")
-        : "";
-    const parsed = parseSherlockReport(rawText, {
-      searchedPlate: job.searchedPlate,
-      reportUrl: result.reportUrl,
-    });
-    const artifactKey = buildSherlockReportKey(job.vehicleId, job.id, result.contentType);
-    await storeSherlockReportArtifact({
-      key: artifactKey,
-      body: result.reportBody,
-      contentType: result.contentType,
-    });
-
-    await prisma.$transaction(async (tx) => {
-      const report = await tx.sherlockReport.create({
-        data: {
-          vehicleId: job.vehicleId,
-          lookupJobId: job.id,
-          searchedPlate: job.searchedPlate,
-          reportUrl: result.reportUrl,
-          artifactKey,
-          contentType: result.contentType,
-          normalizedData: asJson(parsed),
-          rawMetadata: asJson(result.rawMetadata),
-          parserVersion: parsed.parserVersion,
-        },
-      });
-      if (parsed.phoneCandidates.length > 0) {
-        await tx.sherlockPhoneCandidate.createMany({
-          data: parsed.phoneCandidates.map((candidate) => ({
-            vehicleId: job.vehicleId,
-            lookupJobId: job.id,
-            reportId: report.id,
-            phone: candidate.phone,
-            providerConfidence: candidate.providerConfidence,
-            rank: candidate.rank,
-            source: candidate.source,
-            fetchedAt: new Date(candidate.fetchedAt),
-          })),
-        });
-      }
-      await tx.vehicle.update({
-        where: { id: job.vehicleId },
-        data: {
-          sherlockLookupStatus: SherlockLookupStatus.DONE,
-          sherlockBestPhone: parsed.bestPhone,
-          sherlockBestProviderConfidence: parsed.bestProviderConfidence,
-          sherlockHasMultipleTopCandidates: parsed.hasMultipleTopCandidates,
-          sherlockUpdatedAt: new Date(),
-        },
-      });
-      await tx.sherlockLookupJob.update({
-        where: { id: job.id },
-        data: {
-          status: SherlockLookupStatus.DONE,
-          finishedAt: new Date(),
-          lockedAt: null,
-          rawMetadata: asJson(result.rawMetadata),
-        },
-      });
-    });
-
-    log.info("sherlock.lookup.done", {
-      jobId: job.id,
-      vehicleId: job.vehicleId,
-      plate: job.searchedPlate,
-      candidates: parsed.phoneCandidates.length,
-    });
+    await completeSherlockLookupJob(job, result);
   } catch (error) {
+    if (await recoverSherlockLookupJobFromHistory(job, provider)) return;
+
     log.error("sherlock.lookup.failed", {
       jobId: job.id,
       vehicleId: job.vehicleId,
