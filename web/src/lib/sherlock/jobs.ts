@@ -2,6 +2,7 @@ import { Prisma, SherlockLookupStatus } from "@prisma/client";
 import { prisma } from "../db";
 import { env } from "../env";
 import { log } from "../logger";
+import { shouldSendPaidSherlockRequest } from "./job-policy";
 import { buildSherlockReportKey, parseSherlockReport } from "./report-parser";
 import {
   TeleprotoSherlockProvider,
@@ -382,7 +383,12 @@ export async function processSherlockLookupJob(
       where: { id: job.id },
       data: { status: SherlockLookupStatus.WAITING_REPORT },
     });
-    const result = await provider.lookupByPlate(job.searchedPlate);
+    const result = shouldSendPaidSherlockRequest(job.attempts)
+      ? await provider.lookupByPlate(job.searchedPlate)
+      : await provider.recoverLatestByPlate?.(job.searchedPlate);
+    if (!result) {
+      throw new Error(`Sherlock report was not recovered from history after attempt ${job.attempts}`);
+    }
     await completeSherlockLookupJob(job, result);
   } catch (error) {
     if (await recoverSherlockLookupJobFromHistory(job, provider)) return;

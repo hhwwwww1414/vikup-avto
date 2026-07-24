@@ -62,6 +62,34 @@ test("isSherlockReportMessageForPlate matches B668MA777 report for Cyrillic plat
   );
 });
 
+test("isSherlockReportMessageForPlate treats no-result response as terminal", () => {
+  assert.equal(
+    isSherlockReportMessageForPlate(
+      {
+        message:
+          "К сожалению, по данному запросу ничего не найдено.\nКоличество доступных запросов не изменилось.",
+        replyTo: { replyToMsgId: 12345 },
+      },
+      "Е318СК499",
+      12345,
+    ),
+    true,
+  );
+});
+
+test("isSherlockReportMessageForPlate does not match plate-less no-result without reply correlation", () => {
+  assert.equal(
+    isSherlockReportMessageForPlate(
+      {
+        message:
+          "К сожалению, по данному запросу ничего не найдено.\nКоличество доступных запросов не изменилось.",
+      },
+      "Е318СК499",
+    ),
+    false,
+  );
+});
+
 test("isSherlockReportMessageForPlate matches real Sherlock full report prompt", () => {
   assert.equal(
     isSherlockReportMessageForPlate(

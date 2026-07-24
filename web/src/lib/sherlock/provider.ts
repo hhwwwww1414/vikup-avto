@@ -68,7 +68,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
   private client: TelegramClient<StringSession> | null = null;
   private connecting: Promise<TelegramClient<StringSession>> | null = null;
   private lastSentAt = 0;
-  private sendQueue: Promise<void> = Promise.resolve();
+  private sendQueue: Promise<unknown> = Promise.resolve();
 
   private async getClient(): Promise<TelegramClient<StringSession>> {
     if (this.client) return this.client;
@@ -111,9 +111,15 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     if (recovered) return recovered;
 
     await this.markRecentMessagesSeen(bot, seenMessageIds);
-    await this.sendPlateWithSpacing(client, bot, plate);
+    const requestMessageId = await this.sendPlateWithSpacing(client, bot, plate);
 
-    const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt, plate);
+    const message = await this.waitForReportMessage(
+      bot,
+      seenMessageIds,
+      startedAt,
+      plate,
+      requestMessageId,
+    );
     return this.resultFromMessage(message, plate);
   }
 
@@ -129,16 +135,19 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     client: TelegramClient<StringSession>,
     bot: string,
     plate: string,
-  ): Promise<void> {
+  ): Promise<number | null> {
     const queued = this.sendQueue.then(async () => {
       const waitMs = Math.max(0, env.sherlockSendIntervalMs - (Date.now() - this.lastSentAt));
       if (waitMs > 0) await delay(waitMs);
-      await withFloodWaitRetry(() => client.sendMessage(bot, { message: plate }));
+      const sent = (await withFloodWaitRetry(() =>
+        client.sendMessage(bot, { message: plate }),
+      )) as TeleMessage | undefined;
       this.lastSentAt = Date.now();
-      log.info("sherlock.telegram.sent", { plate });
+      log.info("sherlock.telegram.sent", { plate, telegramMessageId: sent?.id });
+      return typeof sent?.id === "number" ? sent.id : null;
     });
     this.sendQueue = queued.catch(() => undefined);
-    await queued;
+    return queued;
   }
 
   private async resultFromMessage(message: TeleMessage, plate: string): Promise<SherlockProviderResult> {
@@ -224,6 +233,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     seenMessageIds: Set<number>,
     startedAt: number,
     plate: string,
+    requestMessageId: number | null,
   ): Promise<TeleMessage> {
     const client = await this.getClient();
     const timeoutMs = env.sherlockLookupTimeoutMs;
@@ -232,7 +242,7 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     const handler = (event: { message?: TeleMessage }) => {
       const message = event.message;
       if (!message) return;
-      if (isSherlockReportMessageForPlate(message, plate)) {
+      if (isSherlockReportMessageForPlate(message, plate, requestMessageId)) {
         resolved = message;
         return;
       }
@@ -243,7 +253,13 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     try {
       while (Date.now() - startedAt < timeoutMs) {
         if (resolved) return resolved;
-        const latest = await this.findLatestReportLikeMessage(bot, seenMessageIds, plate);
+        const latest = await this.findLatestReportLikeMessage(
+          bot,
+          seenMessageIds,
+          plate,
+          10,
+          requestMessageId,
+        );
         if (latest) return latest;
         await delay(1000);
       }
@@ -259,13 +275,14 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     seenMessageIds: Set<number>,
     plate: string,
     limit = 10,
+    requestMessageId?: number | null,
   ): Promise<TeleMessage | null> {
     const client = await this.getClient();
     for await (const raw of client.iterMessages(bot, { limit })) {
       const message = raw as TeleMessage;
       const id = typeof message.id === "number" ? message.id : null;
       if (id && seenMessageIds.has(id)) continue;
-      if (isSherlockReportMessageForPlate(message, plate)) return message;
+      if (isSherlockReportMessageForPlate(message, plate, requestMessageId)) return message;
       if (id) seenMessageIds.add(id);
     }
     return null;
