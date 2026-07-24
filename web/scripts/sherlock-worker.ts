@@ -6,6 +6,7 @@ import {
   acquireNextSherlockLookupJob,
   processSherlockLookupJob,
 } from "../src/lib/sherlock/jobs";
+import { TeleprotoSherlockProvider } from "../src/lib/sherlock/provider";
 
 let stopping = false;
 
@@ -16,15 +17,40 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 }
 
 async function main(): Promise<void> {
-  log.info("sherlock.worker.started");
+  const provider = new TeleprotoSherlockProvider();
+  const active = new Set<Promise<void>>();
+  log.info("sherlock.worker.started", { concurrency: env.sherlockWorkerConcurrency });
+
+  const startJob = (jobId: string): void => {
+    const task = processSherlockLookupJob(jobId, provider)
+      .catch((error) => {
+        log.error("sherlock.worker.jobUnhandled", { jobId, err: String(error) });
+      })
+      .finally(() => {
+        active.delete(task);
+      });
+    active.add(task);
+  };
+
   while (!stopping) {
-    const job = await acquireNextSherlockLookupJob();
-    if (!job) {
+    while (active.size < env.sherlockWorkerConcurrency) {
+      const job = await acquireNextSherlockLookupJob();
+      if (!job) break;
+      startJob(job.id);
+    }
+
+    if (active.size === 0) {
       await delay(env.sherlockWorkerPollMs);
       continue;
     }
-    await processSherlockLookupJob(job.id);
+
+    await Promise.race([
+      ...active,
+      delay(env.sherlockWorkerPollMs),
+    ]);
   }
+
+  await Promise.allSettled(active);
   await prisma.$disconnect();
   log.info("sherlock.worker.stopped");
 }

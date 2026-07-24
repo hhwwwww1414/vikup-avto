@@ -67,6 +67,10 @@ export const env = {
     const v = process.env.SHERLOCK_WORKER_POLL_MS;
     return v ? Number(v) : 5_000;
   },
+  get sherlockWorkerConcurrency() {
+    const v = process.env.SHERLOCK_WORKER_CONCURRENCY;
+    return v ? Number(v) : 3;
+  },
   get sherlockFreshReportTtlHours() {
     const v = process.env.SHERLOCK_FRESH_REPORT_TTL_HOURS;
     return v ? Number(v) : 24 * 14;

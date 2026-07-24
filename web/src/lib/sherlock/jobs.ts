@@ -17,6 +17,39 @@ function asJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+type StoredSherlockReportData = ReturnType<typeof parseSherlockReport>;
+
+function reportData(report: { normalizedData: Prisma.JsonValue }): StoredSherlockReportData {
+  return report.normalizedData as unknown as StoredSherlockReportData;
+}
+
+function isReusableSherlockReport(report: {
+  reportUrl: string | null;
+  normalizedData: Prisma.JsonValue;
+}): boolean {
+  const normalized = reportData(report);
+  return Boolean(report.reportUrl || normalized.phoneCandidates?.length);
+}
+
+function vehicleSherlockDataFromReport(report: {
+  normalizedData: Prisma.JsonValue;
+}): {
+  sherlockLookupStatus: SherlockLookupStatus;
+  sherlockBestPhone: string | null;
+  sherlockBestProviderConfidence: number | null;
+  sherlockHasMultipleTopCandidates: boolean;
+  sherlockUpdatedAt: Date;
+} {
+  const normalized = reportData(report);
+  return {
+    sherlockLookupStatus: SherlockLookupStatus.DONE,
+    sherlockBestPhone: normalized.bestPhone ?? null,
+    sherlockBestProviderConfidence: normalized.bestProviderConfidence ?? null,
+    sherlockHasMultipleTopCandidates: Boolean(normalized.hasMultipleTopCandidates),
+    sherlockUpdatedAt: new Date(),
+  };
+}
+
 export async function enqueueSherlockLookupForVehicle(vehicleId: string): Promise<string | null> {
   const vehicle = await prisma.vehicle.findUnique({
     where: { id: vehicleId },
@@ -36,17 +69,10 @@ export async function enqueueSherlockLookupForVehicle(vehicleId: string): Promis
     orderBy: { createdAt: "desc" },
   });
 
-  if (existingReport) {
-    const normalized = existingReport.normalizedData as unknown as ReturnType<typeof parseSherlockReport>;
+  if (existingReport && isReusableSherlockReport(existingReport)) {
     await prisma.vehicle.update({
       where: { id: vehicle.id },
-      data: {
-        sherlockLookupStatus: SherlockLookupStatus.DONE,
-        sherlockBestPhone: normalized.bestPhone ?? null,
-        sherlockBestProviderConfidence: normalized.bestProviderConfidence ?? null,
-        sherlockHasMultipleTopCandidates: Boolean(normalized.hasMultipleTopCandidates),
-        sherlockUpdatedAt: new Date(),
-      },
+      data: vehicleSherlockDataFromReport(existingReport),
     });
     log.info("sherlock.lookup.reused", {
       vehicleId: vehicle.id,
@@ -192,7 +218,19 @@ async function failJob(jobId: string, error: unknown): Promise<void> {
   });
   if (!job) return;
 
+  const latestReusableReport = await prisma.sherlockReport.findFirst({
+    where: { vehicleId: job.vehicleId },
+    orderBy: { createdAt: "desc" },
+  });
   const exhausted = job.attempts >= job.maxAttempts;
+  const vehicleData =
+    latestReusableReport && isReusableSherlockReport(latestReusableReport)
+      ? vehicleSherlockDataFromReport(latestReusableReport)
+      : {
+          sherlockLookupStatus: SherlockLookupStatus.FAILED,
+          sherlockUpdatedAt: new Date(),
+        };
+
   await prisma.$transaction([
     prisma.sherlockLookupJob.update({
       where: { id: jobId },
@@ -206,10 +244,7 @@ async function failJob(jobId: string, error: unknown): Promise<void> {
     }),
     prisma.vehicle.update({
       where: { id: job.vehicleId },
-      data: {
-        sherlockLookupStatus: SherlockLookupStatus.FAILED,
-        sherlockUpdatedAt: new Date(),
-      },
+      data: vehicleData,
     }),
   ]);
 }
