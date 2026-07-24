@@ -66,6 +66,8 @@ async function fetchReportUrl(url: string): Promise<{ body: Buffer; contentType:
 export class TeleprotoSherlockProvider implements SherlockProvider {
   private client: TelegramClient<StringSession> | null = null;
   private connecting: Promise<TelegramClient<StringSession>> | null = null;
+  private lastSentAt = 0;
+  private sendQueue: Promise<void> = Promise.resolve();
 
   private async getClient(): Promise<TelegramClient<StringSession>> {
     if (this.client) return this.client;
@@ -108,10 +110,25 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     if (recovered) return this.resultFromMessage(recovered);
 
     await this.markRecentMessagesSeen(bot, seenMessageIds);
-    await withFloodWaitRetry(() => client.sendMessage(bot, { message: plate }));
+    await this.sendPlateWithSpacing(client, bot, plate);
 
     const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt, plate);
     return this.resultFromMessage(message);
+  }
+
+  private async sendPlateWithSpacing(
+    client: TelegramClient<StringSession>,
+    bot: string,
+    plate: string,
+  ): Promise<void> {
+    const queued = this.sendQueue.then(async () => {
+      const waitMs = Math.max(0, env.sherlockSendIntervalMs - (Date.now() - this.lastSentAt));
+      if (waitMs > 0) await delay(waitMs);
+      await withFloodWaitRetry(() => client.sendMessage(bot, { message: plate }));
+      this.lastSentAt = Date.now();
+    });
+    this.sendQueue = queued.catch(() => undefined);
+    await queued;
   }
 
   private async resultFromMessage(message: TeleMessage): Promise<SherlockProviderResult> {
