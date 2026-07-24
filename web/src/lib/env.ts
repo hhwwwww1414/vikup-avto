@@ -61,7 +61,7 @@ export const env = {
   },
   get sherlockLookupTimeoutMs() {
     const v = process.env.SHERLOCK_LOOKUP_TIMEOUT_MS;
-    return v ? Number(v) : 180_000;
+    return v ? Number(v) : 75_000;
   },
   get sherlockWorkerPollMs() {
     const v = process.env.SHERLOCK_WORKER_POLL_MS;

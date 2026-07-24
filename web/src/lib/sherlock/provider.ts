@@ -107,13 +107,13 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
     const seenMessageIds = new Set<number>();
 
     const recovered = await this.findLatestReportLikeMessage(bot, new Set<number>(), plate, 80);
-    if (recovered) return this.resultFromMessage(recovered);
+    if (recovered) return this.resultFromMessage(recovered, plate);
 
     await this.markRecentMessagesSeen(bot, seenMessageIds);
     await this.sendPlateWithSpacing(client, bot, plate);
 
     const message = await this.waitForReportMessage(bot, seenMessageIds, startedAt, plate);
-    return this.resultFromMessage(message);
+    return this.resultFromMessage(message, plate);
   }
 
   private async sendPlateWithSpacing(
@@ -126,16 +126,24 @@ export class TeleprotoSherlockProvider implements SherlockProvider {
       if (waitMs > 0) await delay(waitMs);
       await withFloodWaitRetry(() => client.sendMessage(bot, { message: plate }));
       this.lastSentAt = Date.now();
+      log.info("sherlock.telegram.sent", { plate });
     });
     this.sendQueue = queued.catch(() => undefined);
     await queued;
   }
 
-  private async resultFromMessage(message: TeleMessage): Promise<SherlockProviderResult> {
+  private async resultFromMessage(message: TeleMessage, plate: string): Promise<SherlockProviderResult> {
     const client = await this.getClient();
     const text = messageText(message);
     const fullReportUrl = await this.openFullReportUrl(message);
     const reportUrl = fullReportUrl ?? firstReportUrl(text);
+    log.info("sherlock.telegram.reportFound", {
+      plate,
+      telegramMessageId: message.id,
+      hasFullReportUrl: Boolean(fullReportUrl),
+      hasMessageUrl: Boolean(reportUrl),
+      hasMedia: Boolean(message.media),
+    });
 
     if (fullReportUrl) {
       const fetched = await fetchReportUrl(fullReportUrl);
