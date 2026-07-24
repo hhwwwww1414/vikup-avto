@@ -16,7 +16,24 @@ export function messageText(message: SherlockMessageLike): string {
 }
 
 export function normalizeSherlockPlateText(value: string): string {
-  return value.replace(/\s+/g, "").toUpperCase();
+  const lookAlikes: Record<string, string> = {
+    A: "А",
+    B: "В",
+    E: "Е",
+    K: "К",
+    M: "М",
+    H: "Н",
+    O: "О",
+    P: "Р",
+    C: "С",
+    T: "Т",
+    Y: "У",
+    X: "Х",
+  };
+  return value
+    .replace(/\s+/g, "")
+    .toUpperCase()
+    .replace(/[ABEKMHOPCTYX]/g, (char) => lookAlikes[char] ?? char);
 }
 
 export function firstReportUrl(text: string): string | null {
